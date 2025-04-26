@@ -10,16 +10,21 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, CalendarDays, BarChart2, BookOpen } from "lucide-react";
+import { Clock, CalendarDays, BarChart2, BookOpen, Mail, Loader2 } from "lucide-react";
+import { FaGoogle } from "react-icons/fa";
+import { Separator } from "@/components/ui/separator";
 
-// Create the schema with zod
+// Create the schema with zod for login
 const loginSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 // Create the schema with zod for registration
-const registerSchema = insertUserSchema.extend({
+const registerSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -32,13 +37,25 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 const AuthPage = () => {
   const [activeTab, setActiveTab] = useState<string>("login");
   const [, navigate] = useLocation();
-  const { user, loginMutation, registerMutation, enableGuestMode } = useAuth();
+  const { 
+    user, 
+    loginMutation, 
+    registerMutation, 
+    enableGuestMode,
+    loginWithGoogle,
+    loginWithEmail,
+    registerWithEmail
+  } = useAuth();
+  
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isEmailLoading, setIsEmailLoading] = useState(false);
+  const [isEmailRegisterLoading, setIsEmailRegisterLoading] = useState(false);
   
   // Login form
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "",
+      email: "",
       password: "",
     },
   });
@@ -48,6 +65,7 @@ const AuthPage = () => {
     resolver: zodResolver(registerSchema),
     defaultValues: {
       username: "",
+      email: "",
       password: "",
       confirmPassword: "",
     },
@@ -60,23 +78,43 @@ const AuthPage = () => {
     }
   }, [user, navigate]);
   
-  // Handle login form submission
-  const onLoginSubmit = (values: LoginFormValues) => {
-    loginMutation.mutate(values, {
-      onSuccess: () => {
-        navigate("/home");
-      },
-    });
+  // Handle Google sign in
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsGoogleLoading(true);
+      await loginWithGoogle();
+      navigate("/home");
+    } catch (error) {
+      console.error("Google sign in failed:", error);
+    } finally {
+      setIsGoogleLoading(false);
+    }
   };
   
-  // Handle register form submission
-  const onRegisterSubmit = (values: RegisterFormValues) => {
-    const { confirmPassword, ...registerData } = values;
-    registerMutation.mutate(registerData, {
-      onSuccess: () => {
-        navigate("/home");
-      },
-    });
+  // Handle email login form submission
+  const onLoginSubmit = async (values: LoginFormValues) => {
+    try {
+      setIsEmailLoading(true);
+      await loginWithEmail(values.email, values.password);
+      navigate("/home");
+    } catch (error) {
+      console.error("Email login failed:", error);
+    } finally {
+      setIsEmailLoading(false);
+    }
+  };
+  
+  // Handle email registration form submission
+  const onRegisterSubmit = async (values: RegisterFormValues) => {
+    try {
+      setIsEmailRegisterLoading(true);
+      await registerWithEmail(values.email, values.password, values.username);
+      navigate("/home");
+    } catch (error) {
+      console.error("Email registration failed:", error);
+    } finally {
+      setIsEmailRegisterLoading(false);
+    }
   };
 
   return (
@@ -101,18 +139,40 @@ const AuthPage = () => {
                   <CardTitle>Login to your account</CardTitle>
                   <CardDescription>Enter your credentials to access your account</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full flex items-center justify-center gap-2"
+                    onClick={handleGoogleSignIn}
+                    disabled={isGoogleLoading}
+                  >
+                    {isGoogleLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <FaGoogle className="h-4 w-4 text-red-500" />
+                    )}
+                    {isGoogleLoading ? "Connecting..." : "Sign in with Google"}
+                  </Button>
+                  
+                  <div className="flex items-center gap-2">
+                    <Separator className="flex-1" />
+                    <span className="text-xs text-gray-500">OR</span>
+                    <Separator className="flex-1" />
+                  </div>
+                  
                   <Form {...loginForm}>
                     <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                       <FormField
                         control={loginForm.control}
-                        name="username"
+                        name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Username</FormLabel>
+                            <FormLabel>Email</FormLabel>
                             <FormControl>
                               <Input 
-                                placeholder="Enter your username" 
+                                type="email"
+                                placeholder="Enter your email" 
                                 {...field} 
                                 className="bg-gray-800 border-gray-700"
                               />
@@ -144,9 +204,19 @@ const AuthPage = () => {
                       <Button 
                         type="submit" 
                         className="w-full bg-[#388282] hover:bg-[#275050]"
-                        disabled={loginMutation.isPending}
+                        disabled={isEmailLoading}
                       >
-                        {loginMutation.isPending ? "Logging in..." : "Login"}
+                        {isEmailLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Logging in...
+                          </>
+                        ) : (
+                          <>
+                            <Mail className="mr-2 h-4 w-4" />
+                            Sign in with Email
+                          </>
+                        )}
                       </Button>
                     </form>
                   </Form>
@@ -178,7 +248,28 @@ const AuthPage = () => {
                   <CardTitle>Create an account</CardTitle>
                   <CardDescription>Sign up to start using ProTimer</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full flex items-center justify-center gap-2"
+                    onClick={handleGoogleSignIn}
+                    disabled={isGoogleLoading}
+                  >
+                    {isGoogleLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <FaGoogle className="h-4 w-4 text-red-500" />
+                    )}
+                    {isGoogleLoading ? "Connecting..." : "Sign up with Google"}
+                  </Button>
+                  
+                  <div className="flex items-center gap-2">
+                    <Separator className="flex-1" />
+                    <span className="text-xs text-gray-500">OR</span>
+                    <Separator className="flex-1" />
+                  </div>
+                  
                   <Form {...registerForm}>
                     <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
                       <FormField
@@ -190,6 +281,25 @@ const AuthPage = () => {
                             <FormControl>
                               <Input 
                                 placeholder="Choose a username" 
+                                {...field} 
+                                className="bg-gray-800 border-gray-700"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={registerForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="email"
+                                placeholder="Enter your email" 
                                 {...field} 
                                 className="bg-gray-800 border-gray-700"
                               />
@@ -240,9 +350,19 @@ const AuthPage = () => {
                       <Button 
                         type="submit" 
                         className="w-full bg-[#388282] hover:bg-[#275050]"
-                        disabled={registerMutation.isPending}
+                        disabled={isEmailRegisterLoading}
                       >
-                        {registerMutation.isPending ? "Creating account..." : "Register"}
+                        {isEmailRegisterLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Creating account...
+                          </>
+                        ) : (
+                          <>
+                            <Mail className="mr-2 h-4 w-4" />
+                            Sign up with Email
+                          </>
+                        )}
                       </Button>
                     </form>
                   </Form>

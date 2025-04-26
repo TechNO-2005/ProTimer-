@@ -95,8 +95,12 @@ const AuthPage = () => {
   const onLoginSubmit = async (values: LoginFormValues) => {
     try {
       setIsEmailLoading(true);
-      await loginWithEmail(values.email, values.password);
-      navigate("/home");
+      // Use the database authentication instead of Firebase
+      await loginMutation.mutateAsync({
+        username: values.email, // Use email as username for simplicity
+        password: values.password
+      });
+      navigate("/");
     } catch (error) {
       console.error("Email login failed:", error);
     } finally {
@@ -108,8 +112,13 @@ const AuthPage = () => {
   const onRegisterSubmit = async (values: RegisterFormValues) => {
     try {
       setIsEmailRegisterLoading(true);
-      await registerWithEmail(values.email, values.password, values.username);
-      navigate("/home");
+      // Use the database registration instead of Firebase
+      await registerMutation.mutateAsync({
+        username: values.username,
+        password: values.password,
+        email: values.email
+      });
+      navigate("/");
     } catch (error) {
       console.error("Email registration failed:", error);
     } finally {

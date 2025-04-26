@@ -82,14 +82,12 @@ const AuthPage = () => {
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
-      // Display a message about the unauthorized domain
-      alert("Google Sign-in requires domain authorization in Firebase console.\n\nPlease go to Firebase console → Authentication → Settings → Authorized domains and add your Replit domain. For now, please use email/password sign-in.");
-
-      // Uncomment this line when domain is authorized
-      // await loginWithGoogle();
-      // navigate("/");
+      // Google sign-in should now work with the authorized domain
+      await loginWithGoogle();
+      window.location.href = "/"; // Direct navigation for page reload
     } catch (error) {
       console.error("Google sign in failed:", error);
+      alert("Google sign-in failed. This might be because the domain is not yet authorized in Firebase. Please try email/password sign-in instead.");
     } finally {
       setIsGoogleLoading(false);
     }

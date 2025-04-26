@@ -82,8 +82,12 @@ const AuthPage = () => {
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
-      await loginWithGoogle();
-      navigate("/home");
+      // Display a message about the unauthorized domain
+      alert("Google Sign-in requires domain authorization in Firebase console.\n\nPlease go to Firebase console → Authentication → Settings → Authorized domains and add your Replit domain. For now, please use email/password sign-in.");
+
+      // Uncomment this line when domain is authorized
+      // await loginWithGoogle();
+      // navigate("/");
     } catch (error) {
       console.error("Google sign in failed:", error);
     } finally {
@@ -95,12 +99,14 @@ const AuthPage = () => {
   const onLoginSubmit = async (values: LoginFormValues) => {
     try {
       setIsEmailLoading(true);
-      // Use the database authentication instead of Firebase
+      // Use the standard email/password authentication
       await loginMutation.mutateAsync({
-        username: values.email, // Use email as username for simplicity
+        username: values.email, // Using email as username for login
         password: values.password
       });
-      navigate("/");
+      
+      // Redirect to homepage after successful login
+      window.location.href = "/"; // Using direct navigation to ensure full page reload
     } catch (error) {
       console.error("Email login failed:", error);
     } finally {
@@ -118,7 +124,9 @@ const AuthPage = () => {
         password: values.password,
         email: values.email
       });
-      navigate("/");
+      
+      // Redirect to homepage after successful registration
+      window.location.href = "/"; // Using direct navigation to ensure full page reload
     } catch (error) {
       console.error("Email registration failed:", error);
     } finally {

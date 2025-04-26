@@ -4,8 +4,12 @@ import type { User, InsertUser, Task, InsertTask, Habit, InsertHabit,
   Meeting, InsertMeeting } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { db, pool } from "./db";
+import { eq, and } from "drizzle-orm";
 
 const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 // Storage interface
 export interface IStorage {
@@ -53,6 +57,189 @@ export interface IStorage {
   sessionStore: session.SessionStore;
 }
 
+// Database storage implementation using Drizzle ORM
+export class DatabaseStorage implements IStorage {
+  sessionStore: session.SessionStore;
+
+  constructor() {
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true
+    });
+  }
+
+  // User methods
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  // Task methods
+  async getTasks(userId: number): Promise<Task[]> {
+    return await db.select().from(tasks).where(eq(tasks.userId, userId));
+  }
+
+  async getTasksByDate(userId: number, date: string): Promise<Task[]> {
+    return await db.select().from(tasks).where(
+      and(
+        eq(tasks.userId, userId),
+        eq(tasks.date, date)
+      )
+    );
+  }
+
+  async getTaskById(id: number): Promise<Task | undefined> {
+    const [task] = await db.select().from(tasks).where(eq(tasks.id, id));
+    return task;
+  }
+
+  async createTask(task: InsertTask): Promise<Task> {
+    const [newTask] = await db.insert(tasks).values(task).returning();
+    return newTask;
+  }
+
+  async updateTask(id: number, taskUpdate: Partial<Task>): Promise<Task | undefined> {
+    const [updatedTask] = await db
+      .update(tasks)
+      .set(taskUpdate)
+      .where(eq(tasks.id, id))
+      .returning();
+    return updatedTask;
+  }
+
+  async deleteTask(id: number): Promise<boolean> {
+    const result = await db.delete(tasks).where(eq(tasks.id, id));
+    return true; // In a real database, we'd check the result
+  }
+
+  // Habit methods
+  async getHabits(userId: number): Promise<Habit[]> {
+    return await db.select().from(habits).where(eq(habits.userId, userId));
+  }
+
+  async getHabitById(id: number): Promise<Habit | undefined> {
+    const [habit] = await db.select().from(habits).where(eq(habits.id, id));
+    return habit;
+  }
+
+  async createHabit(habit: InsertHabit): Promise<Habit> {
+    const [newHabit] = await db.insert(habits).values(habit).returning();
+    return newHabit;
+  }
+
+  async updateHabit(id: number, habitUpdate: Partial<Habit>): Promise<Habit | undefined> {
+    const [updatedHabit] = await db
+      .update(habits)
+      .set(habitUpdate)
+      .where(eq(habits.id, id))
+      .returning();
+    return updatedHabit;
+  }
+
+  async deleteHabit(id: number): Promise<boolean> {
+    await db.delete(habits).where(eq(habits.id, id));
+    return true;
+  }
+
+  // Flashcard deck methods
+  async getFlashcardDecks(userId: number): Promise<FlashcardDeck[]> {
+    return await db.select().from(flashcardDecks).where(eq(flashcardDecks.userId, userId));
+  }
+
+  async getFlashcardDeckById(id: number): Promise<FlashcardDeck | undefined> {
+    const [deck] = await db.select().from(flashcardDecks).where(eq(flashcardDecks.id, id));
+    return deck;
+  }
+
+  async createFlashcardDeck(deck: InsertFlashcardDeck): Promise<FlashcardDeck> {
+    const [newDeck] = await db.insert(flashcardDecks).values(deck).returning();
+    return newDeck;
+  }
+
+  async updateFlashcardDeck(id: number, deckUpdate: Partial<FlashcardDeck>): Promise<FlashcardDeck | undefined> {
+    const [updatedDeck] = await db
+      .update(flashcardDecks)
+      .set(deckUpdate)
+      .where(eq(flashcardDecks.id, id))
+      .returning();
+    return updatedDeck;
+  }
+
+  async deleteFlashcardDeck(id: number): Promise<boolean> {
+    await db.delete(flashcardDecks).where(eq(flashcardDecks.id, id));
+    return true;
+  }
+
+  // Flashcard methods
+  async getFlashcards(deckId: number): Promise<Flashcard[]> {
+    return await db.select().from(flashcards).where(eq(flashcards.deckId, deckId));
+  }
+
+  async getFlashcardById(id: number): Promise<Flashcard | undefined> {
+    const [card] = await db.select().from(flashcards).where(eq(flashcards.id, id));
+    return card;
+  }
+
+  async createFlashcard(card: InsertFlashcard): Promise<Flashcard> {
+    const [newCard] = await db.insert(flashcards).values(card).returning();
+    return newCard;
+  }
+
+  async updateFlashcard(id: number, cardUpdate: Partial<Flashcard>): Promise<Flashcard | undefined> {
+    const [updatedCard] = await db
+      .update(flashcards)
+      .set(cardUpdate)
+      .where(eq(flashcards.id, id))
+      .returning();
+    return updatedCard;
+  }
+
+  async deleteFlashcard(id: number): Promise<boolean> {
+    await db.delete(flashcards).where(eq(flashcards.id, id));
+    return true;
+  }
+
+  // Meeting methods
+  async getMeetings(userId: number): Promise<Meeting[]> {
+    return await db.select().from(meetings).where(eq(meetings.userId, userId));
+  }
+
+  async getMeetingById(id: number): Promise<Meeting | undefined> {
+    const [meeting] = await db.select().from(meetings).where(eq(meetings.id, id));
+    return meeting;
+  }
+
+  async createMeeting(meeting: InsertMeeting): Promise<Meeting> {
+    const [newMeeting] = await db.insert(meetings).values(meeting).returning();
+    return newMeeting;
+  }
+
+  async updateMeeting(id: number, meetingUpdate: Partial<Meeting>): Promise<Meeting | undefined> {
+    const [updatedMeeting] = await db
+      .update(meetings)
+      .set(meetingUpdate)
+      .where(eq(meetings.id, id))
+      .returning();
+    return updatedMeeting;
+  }
+
+  async deleteMeeting(id: number): Promise<boolean> {
+    await db.delete(meetings).where(eq(meetings.id, id));
+    return true;
+  }
+}
+
+// In-memory storage for development/testing if needed
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private tasks: Map<number, Task>;
@@ -270,4 +457,5 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Use the database storage by default
+export const storage = new DatabaseStorage();

@@ -491,6 +491,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Study Groups API
+  app.get("/api/study-groups", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const userId = req.user!.id;
+    
+    const myGroups = await storage.getStudyGroups(userId); // Groups created by the user
+    const joinedGroups = await storage.getStudyGroupsForUser(userId); // Groups the user is a member of
+    
+    // Combine and remove duplicates
+    const allGroups = [...myGroups];
+    for (const group of joinedGroups) {
+      if (!allGroups.some(g => g.id === group.id)) {
+        allGroups.push(group);
+      }
+    }
+    
+    res.json(allGroups);
+  });
+  
+  app.get("/api/study-groups/search", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { q } = req.query as { q?: string };
+    
+    if (!q) {
+      return res.status(400).json({ message: "Search query is required" });
+    }
+    
+    const groups = await storage.searchStudyGroups(q);
+    res.json(groups);
+  });
+  
+  app.get("/api/study-groups/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { id } = req.params;
+    
+    const group = await storage.getStudyGroupById(Number(id));
+    if (!group) return res.status(404).json({ message: "Study group not found" });
+    
+    res.json(group);
+  });
+  
+  app.post("/api/study-groups", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const groupData = insertStudyGroupSchema.parse({ 
+        ...req.body, 
+        createdBy: req.user!.id 
+      });
+      
+      const group = await storage.createStudyGroup(groupData);
+      res.status(201).json(group);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid study group data", error });
+    }
+  });
+  
+  app.put("/api/study-groups/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { id } = req.params;
+    
+    const group = await storage.getStudyGroupById(Number(id));
+    if (!group) return res.status(404).json({ message: "Study group not found" });
+    
+    if (group.createdBy !== req.user!.id) {
+      return res.status(403).json({ message: "Not authorized to update this study group" });
+    }
+    
+    const updatedGroup = await storage.updateStudyGroup(Number(id), req.body);
+    res.json(updatedGroup);
+  });
+  
+  app.delete("/api/study-groups/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { id } = req.params;
+    
+    const group = await storage.getStudyGroupById(Number(id));
+    if (!group) return res.status(404).json({ message: "Study group not found" });
+    
+    if (group.createdBy !== req.user!.id) {
+      return res.status(403).json({ message: "Not authorized to delete this study group" });
+    }
+    
+    const success = await storage.deleteStudyGroup(Number(id));
+    if (success) {
+      res.sendStatus(204);
+    } else {
+      res.status(500).json({ message: "Failed to delete study group" });
+    }
+  });
+  
+  // Study Group Membership API
+  app.get("/api/study-groups/:id/members", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { id } = req.params;
+    
+    const group = await storage.getStudyGroupById(Number(id));
+    if (!group) return res.status(404).json({ message: "Study group not found" });
+    
+    const members = await storage.getStudyGroupMembers(Number(id));
+    res.json(members);
+  });
+  
+  app.post("/api/study-groups/:id/join", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { id } = req.params;
+    const userId = req.user!.id;
+    
+    const group = await storage.getStudyGroupById(Number(id));
+    if (!group) return res.status(404).json({ message: "Study group not found" });
+    
+    try {
+      const memberData = insertStudyGroupMemberSchema.parse({
+        groupId: Number(id),
+        userId,
+        status: "active"
+      });
+      
+      const membership = await storage.addUserToStudyGroup(memberData);
+      res.status(201).json(membership);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to join study group", error });
+    }
+  });
+  
+  app.post("/api/study-groups/:id/leave", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { id } = req.params;
+    const userId = req.user!.id;
+    
+    const group = await storage.getStudyGroupById(Number(id));
+    if (!group) return res.status(404).json({ message: "Study group not found" });
+    
+    // Don't allow the creator to leave their own group
+    if (group.createdBy === userId) {
+      return res.status(400).json({ 
+        message: "As the creator, you cannot leave your own group. You may delete it instead." 
+      });
+    }
+    
+    const success = await storage.removeUserFromStudyGroup(Number(id), userId);
+    if (success) {
+      res.sendStatus(204);
+    } else {
+      res.status(400).json({ message: "Failed to leave study group" });
+    }
+  });
+  
+  app.get("/api/study-groups/:id/leaderboard", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { id } = req.params;
+    
+    const group = await storage.getStudyGroupById(Number(id));
+    if (!group) return res.status(404).json({ message: "Study group not found" });
+    
+    const leaderboard = await storage.getStudyGroupLeaderboard(Number(id));
+    res.json(leaderboard);
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

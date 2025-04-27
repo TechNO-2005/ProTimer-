@@ -15,6 +15,8 @@ import Flashcards from "@/pages/Flashcards";
 import SmartMeetings from "@/pages/SmartMeetings";
 import CalendarSync from "@/pages/CalendarSync";
 import StudyTracker from "@/pages/StudyTracker";
+import StudyGroups from "@/pages/StudyGroups";
+import StudyGroupDetail from "@/pages/StudyGroupDetail";
 import NotFound from "@/pages/not-found";
 import { ProtectedRoute } from "@/lib/protected-route";
 import "./index.css";
@@ -34,6 +36,8 @@ function Router() {
       <ProtectedRoute path="/smart-meetings" component={SmartMeetings} />
       <ProtectedRoute path="/calendar-sync" component={CalendarSync} />
       <ProtectedRoute path="/study-tracker" component={StudyTracker} />
+      <ProtectedRoute path="/study-groups" component={StudyGroups} />
+      <ProtectedRoute path="/study-groups/:id" component={StudyGroupDetail} />
       <Route component={NotFound} />
     </Switch>
   );

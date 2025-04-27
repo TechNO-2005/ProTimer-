@@ -11,6 +11,9 @@ import { eq, and, sql } from "drizzle-orm";
 const MemoryStore = createMemoryStore(session);
 const PostgresSessionStore = connectPg(session);
 
+// Define SessionStore type
+type SessionStore = session.Store;
+
 // Storage interface
 export interface IStorage {
   // User operations
@@ -63,12 +66,12 @@ export interface IStorage {
   getTotalStudyTimeBySubject(userId: number): Promise<{subject: string, duration: number}[]>;
   
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: SessionStore;
 }
 
 // Database storage implementation using Drizzle ORM
 export class DatabaseStorage implements IStorage {
-  sessionStore: session.SessionStore;
+  sessionStore: SessionStore;
 
   constructor() {
     this.sessionStore = new PostgresSessionStore({
@@ -319,7 +322,7 @@ export class MemStorage implements IStorage {
   private flashcards: Map<number, Flashcard>;
   private meetings: Map<number, Meeting>;
   private studySessions: Map<number, StudySession>;
-  sessionStore: session.SessionStore;
+  sessionStore: SessionStore;
   currentId: {
     users: number;
     tasks: number;

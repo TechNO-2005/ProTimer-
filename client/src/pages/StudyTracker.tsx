@@ -87,16 +87,18 @@ export default function StudyTracker() {
   const { data: activeSession } = useQuery<StudySession>({
     queryKey: ["/api/study-sessions/active"],
     enabled: !!user,
-    onSuccess: (data) => {
-      if (data) {
-        setSelectedSession(data);
-        setIsRunning(true);
-      }
-    },
-    onError: () => {
-      // No active session, that's fine
-    }
+    staleTime: 5000,
+    gcTime: 10000,
+    retry: false, // Don't retry since 404s are expected
   });
+  
+  // Effect to handle active session data
+  useEffect(() => {
+    if (activeSession) {
+      setSelectedSession(activeSession);
+      setIsRunning(true);
+    }
+  }, [activeSession]);
 
   // Create new study session
   const createSessionMutation = useMutation({

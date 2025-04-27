@@ -83,8 +83,20 @@ const settingsSchema = z.object({
   breakDuration: z.number().min(1, "Break duration must be at least 1 minute"),
 });
 
+const createGroupSchema = z.object({
+  name: z.string().min(1, "Group name is required"),
+  description: z.string().optional(),
+  isPrivate: z.boolean().default(false),
+});
+
+const searchGroupSchema = z.object({
+  searchTerm: z.string().min(1, "Search term is required"),
+});
+
 type SubjectFormValues = z.infer<typeof subjectSchema>;
 type SettingsFormValues = z.infer<typeof settingsSchema>;
+type CreateGroupFormValues = z.infer<typeof createGroupSchema>;
+type SearchGroupFormValues = z.infer<typeof searchGroupSchema>;
 
 export default function StudyTracker() {
   const { user } = useAuth();
@@ -246,6 +258,70 @@ export default function StudyTracker() {
       breakDuration: selectedSession?.breakDuration ? selectedSession.breakDuration / 60 : 5,
     },
   });
+  
+  // Create group form
+  const createGroupForm = useForm<CreateGroupFormValues>({
+    resolver: zodResolver(createGroupSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      isPrivate: false,
+    },
+  });
+  
+  // Search group form
+  const searchGroupForm = useForm<SearchGroupFormValues>({
+    resolver: zodResolver(searchGroupSchema),
+    defaultValues: {
+      searchTerm: "",
+    },
+  });
+  
+  // Create study group
+  const createGroupMutation = useMutation({
+    mutationFn: async (data: CreateGroupFormValues) => {
+      const res = await apiRequest("POST", "/api/study-groups", data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/study-groups"] });
+      setShowCreateDialog(false);
+      createGroupForm.reset();
+      toast({
+        title: "Study group created",
+        description: "Your new study group has been created",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to create group",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Join study group
+  const joinGroupMutation = useMutation({
+    mutationFn: async (groupId: number) => {
+      const res = await apiRequest("POST", `/api/study-groups/${groupId}/join`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/study-groups"] });
+      toast({
+        title: "Group joined",
+        description: "You have joined the study group",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to join group",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Update timer every second
   useEffect(() => {
@@ -299,6 +375,20 @@ export default function StudyTracker() {
       breakDuration: values.breakDuration * 60,
     };
     updateSettingsMutation.mutate(data);
+  };
+  
+  const handleCreateGroup = (values: CreateGroupFormValues) => {
+    createGroupMutation.mutate(values);
+  };
+  
+  const handleJoinGroup = (groupId: number) => {
+    joinGroupMutation.mutate(groupId);
+  };
+  
+  const handleSearch = (values: SearchGroupFormValues) => {
+    setSearchQuery(values.searchTerm);
+    search();
+    setShowSearchDialog(false);
   };
 
   // Reset settings form when dialog opens
@@ -355,81 +445,197 @@ export default function StudyTracker() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Study Sessions List */}
-          <div className="bg-black rounded-[50px] shadow-[0_0_15px_15px_rgba(225,234,233,0.45)_inset] p-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-medium">Today</h2>
-              <span className="text-gray-300">{formatTime(totalStudyTimeToday)}</span>
-            </div>
-            
-            <div className="space-y-6">
-              {todaysSessions.map((session) => (
-                <div key={session.id} className="flex items-center">
-                  <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mr-4">
-                    <Play className="w-6 h-6" />
-                  </div>
-                  <div className="flex-grow">
-                    <div className="text-xl">
-                      {session.subject} 
-                      {session.taskName && <span className="text-sm ml-2">({session.taskName})</span>}
-                    </div>
-                    <div className="text-right text-gray-300">
-                      {formatTime(session.duration || 0)}
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {todaysSessions.length === 0 && (
-                <div className="text-center text-gray-400 py-8">
-                  No study sessions recorded today. Start one now!
-                </div>
-              )}
-            </div>
-            
-            <div className="mt-6">
-              <Button 
-                onClick={() => setShowSubjectDialog(true)} 
-                variant="outline" 
-                className="w-full border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-black"
-              >
-                <Plus className="mr-2" /> Add Subject
-              </Button>
-            </div>
-          </div>
-          
-          {/* Timer Panel */}
-          <div className="bg-black rounded-[50px] shadow-[0_0_15px_15px_rgba(225,234,233,0.45)_inset] p-8 flex flex-col items-center justify-center">
-            <h2 className="text-2xl font-semibold mb-8">
-              {selectedSession ? `Focus Time: ${selectedSession.subject}` : "Focus Time"}
-            </h2>
-            
-            <div className="w-40 h-40 rounded-full bg-gray-800 flex items-center justify-center mb-8">
-              {selectedSession?.subject?.charAt(0) || "S"}
-            </div>
-            
-            <div className="text-6xl font-bold mb-6">
-              {formatTime(timer)}
-            </div>
-            
-            <div className="flex gap-4">
-              {isRunning ? (
-                <Button onClick={handleStopSession} variant="outline" size="lg" className="border-red-500 text-red-500 hover:bg-red-500 hover:text-black">
-                  <Pause className="mr-2" /> Stop
-                </Button>
-              ) : (
-                <Button onClick={() => setShowSubjectDialog(true)} variant="outline" size="lg" className="border-green-500 text-green-500 hover:bg-green-500 hover:text-black">
-                  <Play className="mr-2" /> Start
-                </Button>
-              )}
+        {/* Pomodoro Mode */}
+        {mode === "pomodoro" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Study Sessions List */}
+            <div className="bg-black rounded-[50px] shadow-[0_0_15px_15px_rgba(225,234,233,0.45)_inset] p-8">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-medium">Today</h2>
+                <span className="text-gray-300">{formatTime(totalStudyTimeToday)}</span>
+              </div>
               
-              <Button onClick={() => setShowSettingsDialog(true)} variant="outline" size="lg">
-                <Settings className="mr-2" /> Settings
-              </Button>
+              <div className="space-y-6">
+                {todaysSessions.map((session) => (
+                  <div key={session.id} className="flex items-center">
+                    <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mr-4">
+                      <Play className="w-6 h-6" />
+                    </div>
+                    <div className="flex-grow">
+                      <div className="text-xl">
+                        {session.subject} 
+                        {session.taskName && <span className="text-sm ml-2">({session.taskName})</span>}
+                      </div>
+                      <div className="text-right text-gray-300">
+                        {formatTime(session.duration || 0)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {todaysSessions.length === 0 && (
+                  <div className="text-center text-gray-400 py-8">
+                    No study sessions recorded today. Start one now!
+                  </div>
+                )}
+              </div>
+              
+              <div className="mt-6">
+                <Button 
+                  onClick={() => setShowSubjectDialog(true)} 
+                  variant="outline" 
+                  className="w-full border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-black"
+                >
+                  <Plus className="mr-2" /> Add Subject
+                </Button>
+              </div>
+            </div>
+            
+            {/* Timer Panel */}
+            <div className="bg-black rounded-[50px] shadow-[0_0_15px_15px_rgba(225,234,233,0.45)_inset] p-8 flex flex-col items-center justify-center">
+              <h2 className="text-2xl font-semibold mb-8">
+                {selectedSession ? `Focus Time: ${selectedSession.subject}` : "Focus Time"}
+              </h2>
+              
+              <div className="w-40 h-40 rounded-full bg-gray-800 flex items-center justify-center mb-8">
+                {selectedSession?.subject?.charAt(0) || "S"}
+              </div>
+              
+              <div className="text-6xl font-bold mb-6">
+                {formatTime(timer)}
+              </div>
+              
+              <div className="flex gap-4">
+                {isRunning ? (
+                  <Button onClick={handleStopSession} variant="outline" size="lg" className="border-red-500 text-red-500 hover:bg-red-500 hover:text-black">
+                    <Pause className="mr-2" /> Stop
+                  </Button>
+                ) : (
+                  <Button onClick={() => setShowSubjectDialog(true)} variant="outline" size="lg" className="border-green-500 text-green-500 hover:bg-green-500 hover:text-black">
+                    <Play className="mr-2" /> Start
+                  </Button>
+                )}
+                
+                <Button onClick={() => setShowSettingsDialog(true)} variant="outline" size="lg">
+                  <Settings className="mr-2" /> Settings
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
+        
+        {/* Groups Mode */}
+        {mode === "groups" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Study Groups List */}
+            <div className="bg-black rounded-[50px] shadow-[0_0_15px_15px_rgba(225,234,233,0.45)_inset] p-8">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-medium">My Study Groups</h2>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => setShowSearchDialog(true)} 
+                    variant="ghost" 
+                    size="sm"
+                    className="text-teal-500 hover:text-teal-300"
+                  >
+                    <Search className="w-5 h-5" />
+                  </Button>
+                  <Button 
+                    onClick={() => setShowCreateDialog(true)} 
+                    variant="ghost" 
+                    size="sm"
+                    className="text-teal-500 hover:text-teal-300"
+                  >
+                    <PlusCircle className="w-5 h-5" />
+                  </Button>
+                </div>
+              </div>
+              
+              {isGroupsLoading ? (
+                <div className="py-8 text-center">Loading study groups...</div>
+              ) : (
+                <div className="space-y-4">
+                  {studyGroups && studyGroups.length > 0 ? (
+                    studyGroups.map((group) => (
+                      <Link key={group.id} href={`/study-group/${group.id}`} className="block">
+                        <div className="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-colors">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="text-xl font-medium">{group.name}</h3>
+                              {group.description && (
+                                <p className="text-gray-400 mt-1">{group.description}</p>
+                              )}
+                            </div>
+                            <div className="flex flex-col items-end">
+                              <span className="text-xs text-gray-400">
+                                {new Date(group.createdAt).toLocaleDateString()}
+                              </span>
+                              {group.isPrivate && (
+                                <span className="text-xs mt-1 px-2 py-0.5 bg-gray-700 rounded-full">Private</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="text-center text-gray-400 py-8">
+                      You're not a member of any study groups yet. Create or join one to get started!
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-2 mt-6">
+                    <Button 
+                      onClick={() => setShowCreateDialog(true)} 
+                      variant="outline" 
+                      className="flex-1 border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-black"
+                    >
+                      <PlusCircle className="mr-2 h-5 w-5" /> Create Group
+                    </Button>
+                    <Button 
+                      onClick={() => setShowSearchDialog(true)} 
+                      variant="outline" 
+                      className="flex-1 border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-black"
+                    >
+                      <Search className="mr-2 h-5 w-5" /> Find Groups
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Timer Panel (Same as in Pomodoro mode for consistency) */}
+            <div className="bg-black rounded-[50px] shadow-[0_0_15px_15px_rgba(225,234,233,0.45)_inset] p-8 flex flex-col items-center justify-center">
+              <h2 className="text-2xl font-semibold mb-8">
+                {selectedSession ? `Focus Time: ${selectedSession.subject}` : "Focus Time"}
+              </h2>
+              
+              <div className="w-40 h-40 rounded-full bg-gray-800 flex items-center justify-center mb-8">
+                {selectedSession?.subject?.charAt(0) || "S"}
+              </div>
+              
+              <div className="text-6xl font-bold mb-6">
+                {formatTime(timer)}
+              </div>
+              
+              <div className="flex gap-4">
+                {isRunning ? (
+                  <Button onClick={handleStopSession} variant="outline" size="lg" className="border-red-500 text-red-500 hover:bg-red-500 hover:text-black">
+                    <Pause className="mr-2" /> Stop
+                  </Button>
+                ) : (
+                  <Button onClick={() => setShowSubjectDialog(true)} variant="outline" size="lg" className="border-green-500 text-green-500 hover:bg-green-500 hover:text-black">
+                    <Play className="mr-2" /> Start
+                  </Button>
+                )}
+                
+                <Button onClick={() => setShowSettingsDialog(true)} variant="outline" size="lg">
+                  <Settings className="mr-2" /> Settings
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Stats Section */}
         {stats && stats.length > 0 && (
@@ -539,6 +745,148 @@ export default function StudyTracker() {
                 </DialogFooter>
               </form>
             </Form>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Create Group Dialog */}
+        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create Study Group</DialogTitle>
+              <DialogDescription>
+                Create a new study group to collaborate with others.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <Form {...createGroupForm}>
+              <form onSubmit={createGroupForm.handleSubmit(handleCreateGroup)} className="space-y-4">
+                <FormField
+                  control={createGroupForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Group Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Mathematics Study Group" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={createGroupForm.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="A group for studying mathematics together" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={createGroupForm.control}
+                  name="isPrivate"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                      <div className="space-y-0.5">
+                        <FormLabel>Private Group</FormLabel>
+                        <FormDescription>
+                          Private groups won't appear in search results
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <div>
+                          <input
+                            type="checkbox"
+                            checked={field.value}
+                            onChange={field.onChange}
+                            className="peer h-4 w-4 rounded border-gray-300"
+                          />
+                        </div>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                <DialogFooter>
+                  <Button type="submit">Create Group</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Search Groups Dialog */}
+        <Dialog open={showSearchDialog} onOpenChange={setShowSearchDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Search Study Groups</DialogTitle>
+              <DialogDescription>
+                Find study groups to join and collaborate with others.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <Form {...searchGroupForm}>
+              <form onSubmit={searchGroupForm.handleSubmit(handleSearch)} className="space-y-4">
+                <FormField
+                  control={searchGroupForm.control}
+                  name="searchTerm"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Search Term</FormLabel>
+                      <div className="flex space-x-2">
+                        <FormControl>
+                          <Input placeholder="Mathematics, Physics, etc." {...field} />
+                        </FormControl>
+                        <Button type="submit" size="sm" className="px-3">
+                          <Search className="h-4 w-4 mr-2" />
+                          Search
+                        </Button>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </form>
+            </Form>
+            
+            {isSearching ? (
+              <div className="py-4 text-center">Searching...</div>
+            ) : searchResults && searchResults.length > 0 ? (
+              <div className="space-y-3 mt-4 max-h-[300px] overflow-y-auto">
+                <h3 className="font-medium">Search Results:</h3>
+                {searchResults.map((group) => (
+                  <div key={group.id} className="bg-gray-800 p-3 rounded-lg">
+                    <div className="flex justify-between">
+                      <div>
+                        <h4 className="font-medium">{group.name}</h4>
+                        {group.description && (
+                          <p className="text-sm text-gray-400">{group.description}</p>
+                        )}
+                      </div>
+                      <Button 
+                        onClick={() => handleJoinGroup(group.id)} 
+                        variant="outline" 
+                        size="sm" 
+                        className="self-start"
+                      >
+                        <UserPlus className="h-4 w-4 mr-1" />
+                        Join
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : searchQuery && (
+              <div className="py-4 text-center text-gray-400">
+                No study groups found matching your search.
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>

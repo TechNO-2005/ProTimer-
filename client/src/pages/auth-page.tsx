@@ -21,7 +21,7 @@ const loginSchema = z.object({
 // Create the schema with zod for registration
 const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
-  email: z.string().email("Please enter a valid email address"),
+  email: z.string().email("Please enter a valid email address").optional().or(z.literal('')),
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -93,7 +93,7 @@ const AuthPage = () => {
     }
   };
   
-  // Handle email registration form submission
+  // Handle registration form submission
   const onRegisterSubmit = async (values: RegisterFormValues) => {
     try {
       setIsEmailRegisterLoading(true);
@@ -101,7 +101,7 @@ const AuthPage = () => {
       await registerMutation.mutateAsync({
         username: values.username,
         password: values.password,
-        email: values.email
+        email: values.email || null // Send null if email is empty
       });
       
       // Redirect to homepage after successful registration
@@ -249,11 +249,11 @@ const AuthPage = () => {
                         name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Email</FormLabel>
+                            <FormLabel>Email (optional)</FormLabel>
                             <FormControl>
                               <Input 
                                 type="email"
-                                placeholder="Enter your email" 
+                                placeholder="Enter your email (optional)" 
                                 {...field} 
                                 className="bg-gray-800 border-gray-700"
                               />

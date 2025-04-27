@@ -79,9 +79,13 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Username already exists" });
       }
 
+      // If email is empty, set it to null
+      const email = req.body.email ? req.body.email : null;
+      
       const user = await storage.createUser({
-        ...req.body,
+        username: req.body.username,
         password: await hashPassword(req.body.password),
+        email: email
       });
 
       req.login(user, (err) => {

@@ -14,7 +14,7 @@ import { Clock, CalendarDays, BarChart2, BookOpen, Mail, Loader2, User } from "l
 
 // Create the schema with zod for login
 const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
+  email: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 

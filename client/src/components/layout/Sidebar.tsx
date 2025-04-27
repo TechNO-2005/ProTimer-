@@ -96,19 +96,24 @@ const Sidebar = ({ visible, onToggle }: SidebarProps) => {
           </nav>
 
           <div className="mt-auto pt-4 border-t border-white/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white font-medium">{isGuestMode ? "Guest User" : user?.username}</p>
-                <p className="text-gray-300 text-sm">{isGuestMode ? "Local data only" : "Signed In"}</p>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center">
+                <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center mr-3">
+                  <span className="text-white font-bold">{user?.username?.charAt(0) || 'G'}</span>
+                </div>
+                <div>
+                  <p className="text-white font-medium">{isGuestMode ? "Guest User" : user?.username}</p>
+                  <p className="text-gray-300 text-sm">{isGuestMode ? "Local data only" : "Signed In"}</p>
+                </div>
               </div>
+              
               <Button
-                variant="ghost"
-                size="sm"
+                variant="outline"
                 onClick={handleLogout}
-                className="text-white hover:bg-white/10"
+                className="w-full flex items-center justify-center text-white border-white/30 hover:bg-white/10 hover:text-[#00FFFF]"
               >
                 <LogOut className="h-5 w-5 mr-2" />
-                {isGuestMode ? "Exit Guest" : "Logout"}
+                {isGuestMode ? "Exit Guest Mode" : "Logout"}
               </Button>
             </div>
           </div>

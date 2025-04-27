@@ -549,33 +549,24 @@ export default function StudyTracker() {
               <div className="py-8 text-center">Loading study groups...</div>
             ) : (
               <div className="space-y-8">
-                {/* Show predefined example groups if no actual groups exist */}
                 {(!studyGroups || studyGroups.length === 0) ? (
-                  <>
-                    <div className="group-item">
-                      <div className="px-8">
-                        <h3 className="text-4xl font-normal">Chanakyans UPSC</h3>
-                        <p className="text-gray-400 text-xl mt-2">Others - 56</p>
-                      </div>
-                      <div className="border-t border-gray-400 my-4 mx-8"></div>
-                    </div>
-                    
-                    <div className="group-item">
-                      <div className="px-8">
-                        <h3 className="text-4xl font-normal">Chanakyans BCA</h3>
-                        <p className="text-gray-400 text-xl mt-2">Others - 29</p>
-                      </div>
-                      <div className="border-t border-gray-400 my-4 mx-8"></div>
-                    </div>
-                    
-                    <div className="group-item">
-                      <div className="px-8">
-                        <h3 className="text-4xl font-normal">Chanakyans CAT</h3>
-                        <p className="text-gray-400 text-xl mt-2">Others - 35</p>
-                      </div>
-                      <div className="border-t border-gray-400 my-4 mx-8"></div>
-                    </div>
-                  </>
+                  <div className="text-center py-10">
+                    <p className="text-gray-400 text-xl mb-4">You haven't joined any study groups yet</p>
+                    <Button 
+                      onClick={() => setShowCreateDialog(true)} 
+                      variant="outline" 
+                      className="border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-black px-6 mr-4"
+                    >
+                      <PlusCircle className="mr-2 h-5 w-5" /> Create a Group
+                    </Button>
+                    <Button 
+                      onClick={() => setShowSearchDialog(true)} 
+                      variant="outline" 
+                      className="border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-black px-6"
+                    >
+                      <Search className="mr-2 h-5 w-5" /> Find Groups
+                    </Button>
+                  </div>
                 ) : (
                   studyGroups.map((group) => (
                     <div key={group.id} className="group-item">

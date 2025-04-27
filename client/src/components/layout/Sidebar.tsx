@@ -11,7 +11,8 @@ import {
   Globe, 
   ChevronLeft,
   ChevronRight,
-  LogOut
+  LogOut,
+  Timer
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -47,6 +48,7 @@ const Sidebar = ({ visible, onToggle }: SidebarProps) => {
     { path: "/priorities", label: "Priorities", icon: <BarChart2 className="h-5 w-5" /> },
     { path: "/tasks", label: "Tasks", icon: <LayoutGrid className="h-5 w-5" /> },
     { path: "/habits", label: "Habits", icon: <Clock className="h-5 w-5" /> },
+    { path: "/study-tracker", label: "Study Tracker", icon: <Timer className="h-5 w-5" /> },
     { path: "/flashcards", label: "Flashcards", icon: <BookOpen className="h-5 w-5" /> },
     { path: "/smart-meetings", label: "Smart Meetings", icon: <Users className="h-5 w-5" /> },
     { path: "/calendar-sync", label: "Calendar Sync", icon: <Globe className="h-5 w-5" /> },

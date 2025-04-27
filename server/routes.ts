@@ -666,6 +666,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const group = await storage.getStudyGroupById(Number(id));
     if (!group) return res.status(404).json({ message: "Study group not found" });
     
+    // Check if the user is a member of the group
+    const members = await storage.getStudyGroupMembers(Number(id));
+    const isMember = members.some(member => 
+      member.userId === req.user!.id && member.status === "active"
+    );
+    
+    if (!isMember) {
+      return res.status(403).json({ message: "You are not a member of this group" });
+    }
+    
     // Get active study sessions for the group
     const activeSessions = await storage.getActiveStudySessionsByGroupId(Number(id));
     res.json(activeSessions);

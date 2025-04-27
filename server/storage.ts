@@ -60,6 +60,7 @@ export interface IStorage {
   // Study Session operations
   getStudySessions(userId: number): Promise<StudySession[]>;
   getActiveStudySession(userId: number): Promise<StudySession | undefined>;
+  getActiveStudySessionsByGroupId(groupId: number): Promise<(StudySession & { username: string })[]>;
   getStudySessionById(id: number): Promise<StudySession | undefined>;
   createStudySession(session: InsertStudySession): Promise<StudySession>;
   updateStudySession(id: number, session: Partial<StudySession>): Promise<StudySession | undefined>;
@@ -279,6 +280,39 @@ export class DatabaseStorage implements IStorage {
       )
     );
     return session;
+  }
+  
+  async getActiveStudySessionsByGroupId(groupId: number): Promise<(StudySession & { username: string })[]> {
+    // Get all users who are members of the group
+    const groupMembers = await this.getStudyGroupMembers(groupId);
+    const memberUserIds = groupMembers.map(member => member.userId);
+    
+    // Get active study sessions for those users
+    const activeSessions = await db
+      .select({
+        id: studySessions.id,
+        userId: studySessions.userId,
+        subject: studySessions.subject,
+        taskName: studySessions.taskName,
+        startTime: studySessions.startTime,
+        endTime: studySessions.endTime,
+        duration: studySessions.duration,
+        isActive: studySessions.isActive,
+        breakDuration: studySessions.breakDuration,
+        focusDuration: studySessions.focusDuration,
+        createdAt: studySessions.createdAt,
+        username: users.username
+      })
+      .from(studySessions)
+      .innerJoin(users, eq(studySessions.userId, users.id))
+      .where(
+        and(
+          inArray(studySessions.userId, memberUserIds),
+          eq(studySessions.isActive, true)
+        )
+      );
+    
+    return activeSessions;
   }
 
   async getStudySessionById(id: number): Promise<StudySession | undefined> {

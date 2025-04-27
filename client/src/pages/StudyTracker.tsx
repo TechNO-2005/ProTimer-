@@ -3,7 +3,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { Pause, Play, Plus, X, Settings, Clock } from "lucide-react";
+import { useLocation, Link } from "wouter";
+import { Pause, Play, Plus, X, Settings, Clock, Users, Search, UserPlus, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -45,6 +46,30 @@ type StudySession = {
 type SubjectStat = {
   subject: string;
   duration: number;
+};
+
+// Study Group Types
+type StudyGroup = {
+  id: number;
+  name: string;
+  description: string | null;
+  createdAt: Date | string;
+  createdBy: number;
+  isPrivate: boolean | null;
+};
+
+type StudyGroupMember = {
+  userId: number;
+  groupId: number;
+  status: string;
+  joinedAt: Date | string;
+  username: string;
+};
+
+type LeaderboardEntry = {
+  userId: number;
+  username: string;
+  totalDuration: number;
 };
 
 // Form schemas
@@ -90,6 +115,30 @@ export default function StudyTracker() {
     staleTime: 5000,
     gcTime: 10000,
     retry: false, // Don't retry since 404s are expected
+  });
+  
+  // Get user's study groups
+  const { 
+    data: studyGroups,
+    isLoading: isGroupsLoading,
+  } = useQuery<StudyGroup[]>({
+    queryKey: ["/api/study-groups"],
+    enabled: !!user && mode === "groups",
+  });
+  
+  // State for study group UI
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showSearchDialog, setShowSearchDialog] = useState(false);
+  
+  // Query for search results
+  const {
+    data: searchResults,
+    isLoading: isSearching,
+    refetch: search,
+  } = useQuery<StudyGroup[]>({
+    queryKey: ["/api/study-groups/search", searchQuery],
+    enabled: false,
   });
   
   // Effect to handle active session data

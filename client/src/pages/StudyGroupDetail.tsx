@@ -4,6 +4,30 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { formatDistanceToNow } from "date-fns";
+
+// Define types for the data
+interface StudyGroup {
+  id: number;
+  name: string;
+  description: string | null;
+  createdAt: Date | string;
+  createdBy: number;
+  isPrivate: boolean | null;
+}
+
+interface StudyGroupMember {
+  userId: number;
+  groupId: number;
+  status: string;
+  joinedAt: Date | string;
+  username: string;
+}
+
+interface LeaderboardEntry {
+  userId: number;
+  username: string;
+  totalDuration: number;
+}
 import {
   Loader2,
   Users,
@@ -82,7 +106,7 @@ export default function StudyGroupDetail() {
     data: group,
     isLoading: isGroupLoading,
     error: groupError,
-  } = useQuery({
+  } = useQuery<StudyGroup>({
     queryKey: [`/api/study-groups/${groupId}`],
     enabled: !!groupId && !!user,
   });
@@ -92,7 +116,7 @@ export default function StudyGroupDetail() {
     data: members,
     isLoading: isMembersLoading,
     error: membersError,
-  } = useQuery({
+  } = useQuery<StudyGroupMember[]>({
     queryKey: [`/api/study-groups/${groupId}/members`],
     enabled: !!groupId && !!user,
   });
@@ -102,7 +126,7 @@ export default function StudyGroupDetail() {
     data: leaderboard,
     isLoading: isLeaderboardLoading,
     error: leaderboardError,
-  } = useQuery({
+  } = useQuery<LeaderboardEntry[]>({
     queryKey: [`/api/study-groups/${groupId}/leaderboard`],
     enabled: !!groupId && !!user,
   });

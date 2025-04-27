@@ -1,0 +1,34 @@
+<div style={{width: 1440, height: 1024, position: 'relative', background: 'black', overflow: 'hidden'}}>
+  <div style={{width: 1072, height: 128, left: 332, top: 457, position: 'absolute', background: 'black'}} />
+  <div style={{width: 278, height: 1027, left: 0, top: -2, position: 'absolute', background: 'conic-gradient(from 179deg at 52.89% 51.69%, #55AEAE 25deg, #275050 132deg, #234848 234deg)'}} />
+  <div style={{width: 366, height: 68, left: 438, top: 73, position: 'absolute', color: 'white', fontSize: 50, fontFamily: 'Inter', fontWeight: '700', wordWrap: 'break-word'}}>Study Tracker<br/></div>
+  <div style={{width: 259, height: 73, left: 21, top: 47, position: 'absolute', color: 'white', fontSize: 62, fontFamily: 'Jaro', fontWeight: '400', wordWrap: 'break-word'}}>ProTimer<br/></div>
+  <div style={{width: 211, height: 97, left: 862, top: 191, position: 'absolute', background: 'rgba(249.04, 249.04, 249.04, 0.57)', boxShadow: '0px 0px 6px 6px rgba(224.66, 234.09, 232.68, 0.45)', borderRadius: 70}} />
+  <div style={{width: 399, height: 97, left: 438, top: 191, position: 'absolute', background: 'black', boxShadow: '0px 0px 6px 6px rgba(224.66, 234.09, 232.68, 0.45)', borderRadius: 70}} />
+  <div style={{width: 76, height: 76, left: 1304, top: 349, position: 'absolute', background: 'black', boxShadow: '0px 0px 6px 6px rgba(224.66, 234.09, 232.68, 0.45)', borderRadius: 100}} />
+  <div style={{left: 1312, top: 329, position: 'absolute', color: 'white', fontSize: 89, fontFamily: 'Inter', fontWeight: '500', wordWrap: 'break-word'}}>+</div>
+  <div style={{width: 316, height: 54, left: 497, top: 217, position: 'absolute', color: 'white', fontSize: 36, fontFamily: 'Inter', fontWeight: '500', wordWrap: 'break-word'}}>Pomodoro Mode</div>
+  <div style={{width: 183, height: 50, left: 902, top: 215, position: 'absolute', color: 'white', fontSize: 36, fontFamily: 'Inter', fontWeight: '500', wordWrap: 'break-word'}}>Groups<br/></div>
+  <div style={{width: 544, height: 43, left: 328, top: 462, position: 'absolute', color: 'white', fontSize: 36, fontFamily: 'Inter', fontWeight: '400', wordWrap: 'break-word'}}>Chanakyans UPSC<br/></div>
+  <div style={{width: 329, height: 43, left: 328, top: 766, position: 'absolute', color: 'white', fontSize: 36, fontFamily: 'Inter', fontWeight: '400', wordWrap: 'break-word'}}>Chanakyans CAT<br/></div>
+  <div style={{width: 329, height: 43, left: 328, top: 626, position: 'absolute', color: 'white', fontSize: 36, fontFamily: 'Inter', fontWeight: '400', wordWrap: 'break-word'}}>Chanakyans BCA<br/></div>
+  <div style={{width: 243, height: 38, left: 328, top: 348, position: 'absolute', color: 'white', fontSize: 36, fontFamily: 'Inter', fontWeight: '500', wordWrap: 'break-word'}}>My Groups</div>
+  <div style={{left: 331, top: 532, position: 'absolute', color: '#D9D9D9', fontSize: 28, fontFamily: 'Inter', fontWeight: '300', wordWrap: 'break-word'}}>Others - 56</div>
+  <div style={{left: 331, top: 836, position: 'absolute', color: '#D9D9D9', fontSize: 28, fontFamily: 'Inter', fontWeight: '300', wordWrap: 'break-word'}}>Others - 35</div>
+  <div style={{left: 331, top: 696, position: 'absolute', color: '#D9D9D9', fontSize: 28, fontFamily: 'Inter', fontWeight: '300', wordWrap: 'break-word'}}>Others - 29</div>
+  <div style={{width: 54, height: 54, left: 332, top: 79, position: 'absolute', background: '#D9D9D9', border: '1px #D9D9D9 solid'}} />
+  <div style={{width: 16.42, height: 27.75, left: 348.35, top: 92.13, position: 'absolute', background: '#D9D9D9', border: '1px #D9D9D9 solid'}} />
+  <div style={{width: 51.78, height: 46.60, left: 1316, top: 646, position: 'absolute', background: '#D9D9D9'}} />
+  <div style={{width: 51.78, height: 46.60, left: 1316, top: 806, position: 'absolute', background: '#D9D9D9'}} />
+  <div style={{width: 51.78, height: 46.60, left: 1316, top: 491, position: 'absolute', background: '#D9D9D9'}} />
+  <div style={{left: 1350, top: 404, position: 'absolute', color: 'white', fontSize: 96, fontFamily: 'Inter', fontWeight: '400', wordWrap: 'break-word'}}>.</div>
+  <div style={{left: 1353, top: 559, position: 'absolute', color: 'white', fontSize: 96, fontFamily: 'Inter', fontWeight: '400', wordWrap: 'break-word'}}>.</div>
+  <div style={{left: 1350, top: 720, position: 'absolute', color: 'white', fontSize: 96, fontFamily: 'Inter', fontWeight: '400', wordWrap: 'break-word'}}>.</div>
+  <div style={{width: 1108, height: 0, left: 332, top: 597, position: 'absolute', outline: '1px #D9D9D9 solid', outlineOffset: '-0.50px'}}></div>
+  <div style={{width: 1108, height: 0, left: 332, top: 749, position: 'absolute', outline: '1px #D9D9D9 solid', outlineOffset: '-0.50px'}}></div>
+  <div style={{width: 1108, height: 0, left: 328, top: 901, position: 'absolute', outline: '1px #D9D9D9 solid', outlineOffset: '-0.50px'}}></div>
+  <img style={{width: 55, height: 58, left: 21, top: 247, position: 'absolute'}} src="https://placehold.co/55x58" />
+  <div style={{width: 158, height: 43, left: 93, top: 258, position: 'absolute', color: 'white', fontSize: 28, fontFamily: 'Inter', fontWeight: '500', wordWrap: 'break-word'}}>Analysis</div>
+  <div style={{left: 93, top: 183, position: 'absolute', color: 'white', fontSize: 32, fontFamily: 'Inter', fontWeight: '400', wordWrap: 'break-word'}}>Home</div>
+  <div style={{width: 41, height: 39.05, left: 25, top: 183, position: 'absolute', background: 'white'}} />
+</div>

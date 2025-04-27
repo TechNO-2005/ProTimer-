@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -131,3 +131,40 @@ export const insertStudySessionSchema = createInsertSchema(studySessions).omit({
 
 export type InsertStudySession = z.infer<typeof insertStudySessionSchema>;
 export type StudySession = typeof studySessions.$inferSelect;
+
+// Study Group Schema
+export const studyGroups = pgTable("study_groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  createdBy: integer("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  isPrivate: boolean("is_private").default(false),
+});
+
+export const insertStudyGroupSchema = createInsertSchema(studyGroups).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertStudyGroup = z.infer<typeof insertStudyGroupSchema>;
+export type StudyGroup = typeof studyGroups.$inferSelect;
+
+// Study Group Membership Schema
+export const studyGroupMembers = pgTable("study_group_members", {
+  groupId: integer("group_id").notNull(),
+  userId: integer("user_id").notNull(),
+  joinedAt: timestamp("joined_at").defaultNow(),
+  status: text("status").notNull().default("active"), // active, inactive, pending, etc.
+}, (table) => {
+  return {
+    pk: primaryKey({ columns: [table.groupId, table.userId] })
+  };
+});
+
+export const insertStudyGroupMemberSchema = createInsertSchema(studyGroupMembers).omit({
+  joinedAt: true
+});
+
+export type InsertStudyGroupMember = z.infer<typeof insertStudyGroupMemberSchema>;
+export type StudyGroupMember = typeof studyGroupMembers.$inferSelect;

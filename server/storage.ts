@@ -1,12 +1,13 @@
-import { users, tasks, habits, flashcardDecks, flashcards, meetings, studySessions } from "@shared/schema";
+import { users, tasks, habits, flashcardDecks, flashcards, meetings, studySessions, studyGroups, studyGroupMembers } from "@shared/schema";
 import type { User, InsertUser, Task, InsertTask, Habit, InsertHabit, 
   FlashcardDeck, InsertFlashcardDeck, Flashcard, InsertFlashcard, 
-  Meeting, InsertMeeting, StudySession, InsertStudySession } from "@shared/schema";
+  Meeting, InsertMeeting, StudySession, InsertStudySession,
+  StudyGroup, InsertStudyGroup, StudyGroupMember, InsertStudyGroupMember } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import connectPg from "connect-pg-simple";
 import { db, pool } from "./db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, like, or, desc, asc } from "drizzle-orm";
 
 const MemoryStore = createMemoryStore(session);
 const PostgresSessionStore = connectPg(session);

@@ -66,6 +66,21 @@ export interface IStorage {
   deleteStudySession(id: number): Promise<boolean>;
   getTotalStudyTimeBySubject(userId: number): Promise<{subject: string, duration: number}[]>;
   
+  // Study Group operations
+  getStudyGroups(userId: number): Promise<StudyGroup[]>;
+  searchStudyGroups(searchTerm: string): Promise<StudyGroup[]>;
+  getStudyGroupById(id: number): Promise<StudyGroup | undefined>;
+  createStudyGroup(group: InsertStudyGroup): Promise<StudyGroup>;
+  updateStudyGroup(id: number, group: Partial<StudyGroup>): Promise<StudyGroup | undefined>;
+  deleteStudyGroup(id: number): Promise<boolean>;
+  
+  // Study Group Membership operations
+  getStudyGroupMembers(groupId: number): Promise<(StudyGroupMember & { username: string })[]>;
+  getStudyGroupsForUser(userId: number): Promise<StudyGroup[]>;
+  addUserToStudyGroup(membership: InsertStudyGroupMember): Promise<StudyGroupMember>;
+  removeUserFromStudyGroup(groupId: number, userId: number): Promise<boolean>;
+  getStudyGroupLeaderboard(groupId: number): Promise<{userId: number, username: string, totalDuration: number}[]>;
+  
   // Session store
   sessionStore: SessionStore;
 }
@@ -312,6 +327,152 @@ export class DatabaseStorage implements IStorage {
     
     return result;
   }
+
+  // Study Group methods
+  async getStudyGroups(userId: number): Promise<StudyGroup[]> {
+    return await db.select()
+      .from(studyGroups)
+      .where(eq(studyGroups.createdBy, userId));
+  }
+
+  async searchStudyGroups(searchTerm: string): Promise<StudyGroup[]> {
+    return await db.select()
+      .from(studyGroups)
+      .where(
+        or(
+          like(studyGroups.name, `%${searchTerm}%`),
+          like(studyGroups.description, `%${searchTerm}%`)
+        )
+      );
+  }
+
+  async getStudyGroupById(id: number): Promise<StudyGroup | undefined> {
+    const [group] = await db.select().from(studyGroups).where(eq(studyGroups.id, id));
+    return group;
+  }
+
+  async createStudyGroup(group: InsertStudyGroup): Promise<StudyGroup> {
+    const [newGroup] = await db.insert(studyGroups).values(group).returning();
+    
+    // Auto-add the creator as a member of the group
+    await db.insert(studyGroupMembers).values({
+      userId: group.createdBy,
+      groupId: newGroup.id,
+      status: "active"
+    });
+    
+    return newGroup;
+  }
+
+  async updateStudyGroup(id: number, groupUpdate: Partial<StudyGroup>): Promise<StudyGroup | undefined> {
+    const [updatedGroup] = await db
+      .update(studyGroups)
+      .set(groupUpdate)
+      .where(eq(studyGroups.id, id))
+      .returning();
+    return updatedGroup;
+  }
+
+  async deleteStudyGroup(id: number): Promise<boolean> {
+    // First delete all memberships
+    await db.delete(studyGroupMembers).where(eq(studyGroupMembers.groupId, id));
+    
+    // Then delete the group
+    await db.delete(studyGroups).where(eq(studyGroups.id, id));
+    return true;
+  }
+
+  // Study Group Membership methods
+  async getStudyGroupMembers(groupId: number): Promise<(StudyGroupMember & { username: string })[]> {
+    return await db
+      .select({
+        groupId: studyGroupMembers.groupId,
+        userId: studyGroupMembers.userId,
+        joinedAt: studyGroupMembers.joinedAt,
+        status: studyGroupMembers.status,
+        username: users.username
+      })
+      .from(studyGroupMembers)
+      .innerJoin(users, eq(studyGroupMembers.userId, users.id))
+      .where(eq(studyGroupMembers.groupId, groupId));
+  }
+
+  async getStudyGroupsForUser(userId: number): Promise<StudyGroup[]> {
+    return await db
+      .select({
+        id: studyGroups.id,
+        name: studyGroups.name,
+        description: studyGroups.description,
+        createdBy: studyGroups.createdBy,
+        createdAt: studyGroups.createdAt,
+        isPrivate: studyGroups.isPrivate
+      })
+      .from(studyGroupMembers)
+      .innerJoin(studyGroups, eq(studyGroupMembers.groupId, studyGroups.id))
+      .where(
+        and(
+          eq(studyGroupMembers.userId, userId),
+          eq(studyGroupMembers.status, "active")
+        )
+      );
+  }
+
+  async addUserToStudyGroup(membership: InsertStudyGroupMember): Promise<StudyGroupMember> {
+    const [newMembership] = await db
+      .insert(studyGroupMembers)
+      .values(membership)
+      .returning();
+    return newMembership;
+  }
+
+  async removeUserFromStudyGroup(groupId: number, userId: number): Promise<boolean> {
+    await db
+      .delete(studyGroupMembers)
+      .where(
+        and(
+          eq(studyGroupMembers.groupId, groupId),
+          eq(studyGroupMembers.userId, userId)
+        )
+      );
+    return true;
+  }
+
+  async getStudyGroupLeaderboard(groupId: number): Promise<{userId: number, username: string, totalDuration: number}[]> {
+    // Get all users in the group
+    const groupMembers = await db
+      .select({
+        userId: studyGroupMembers.userId,
+        username: users.username
+      })
+      .from(studyGroupMembers)
+      .innerJoin(users, eq(studyGroupMembers.userId, users.id))
+      .where(
+        and(
+          eq(studyGroupMembers.groupId, groupId),
+          eq(studyGroupMembers.status, "active")
+        )
+      );
+      
+    // Get study durations for all members
+    const result = await Promise.all(
+      groupMembers.map(async (member) => {
+        const totalDuration = await db.select({
+          totalDuration: sql`sum(${studySessions.duration})`.mapWith(Number)
+        })
+        .from(studySessions)
+        .where(eq(studySessions.userId, member.userId));
+        
+        return {
+          userId: member.userId,
+          username: member.username,
+          totalDuration: totalDuration[0]?.totalDuration || 0
+        };
+      })
+    );
+    
+    // Sort by total duration descending
+    return result.sort((a, b) => b.totalDuration - a.totalDuration);
+  }
 }
 
 // In-memory storage for development/testing if needed
@@ -323,6 +484,8 @@ export class MemStorage implements IStorage {
   private flashcards: Map<number, Flashcard>;
   private meetings: Map<number, Meeting>;
   private studySessions: Map<number, StudySession>;
+  private studyGroups: Map<number, StudyGroup>;
+  private studyGroupMembers: Map<string, StudyGroupMember>; // key is "groupId-userId"
   sessionStore: SessionStore;
   currentId: {
     users: number;
@@ -332,6 +495,7 @@ export class MemStorage implements IStorage {
     flashcards: number;
     meetings: number;
     studySessions: number;
+    studyGroups: number;
   };
 
   constructor() {
@@ -342,6 +506,8 @@ export class MemStorage implements IStorage {
     this.flashcards = new Map();
     this.meetings = new Map();
     this.studySessions = new Map();
+    this.studyGroups = new Map();
+    this.studyGroupMembers = new Map();
     this.currentId = {
       users: 1,
       tasks: 1,
@@ -349,7 +515,8 @@ export class MemStorage implements IStorage {
       flashcardDecks: 1,
       flashcards: 1,
       meetings: 1,
-      studySessions: 1
+      studySessions: 1,
+      studyGroups: 1
     };
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // prune expired entries every 24h
@@ -598,6 +765,141 @@ export class MemStorage implements IStorage {
       subject,
       duration
     }));
+  }
+
+  // Study Group methods
+  async getStudyGroups(userId: number): Promise<StudyGroup[]> {
+    return Array.from(this.studyGroups.values()).filter(
+      (group) => group.createdBy === userId
+    );
+  }
+
+  async searchStudyGroups(searchTerm: string): Promise<StudyGroup[]> {
+    const searchTermLower = searchTerm.toLowerCase();
+    return Array.from(this.studyGroups.values()).filter(
+      (group) => 
+        group.name.toLowerCase().includes(searchTermLower) || 
+        (group.description && group.description.toLowerCase().includes(searchTermLower))
+    );
+  }
+
+  async getStudyGroupById(id: number): Promise<StudyGroup | undefined> {
+    return this.studyGroups.get(id);
+  }
+
+  async createStudyGroup(group: InsertStudyGroup): Promise<StudyGroup> {
+    const id = this.currentId.studyGroups++;
+    const newGroup: StudyGroup = { 
+      ...group, 
+      id,
+      createdAt: new Date() 
+    };
+    this.studyGroups.set(id, newGroup);
+    
+    // Auto-add the creator as a member of the group
+    this.studyGroupMembers.set(`${id}-${group.createdBy}`, {
+      groupId: id,
+      userId: group.createdBy,
+      joinedAt: new Date(),
+      status: "active"
+    });
+    
+    return newGroup;
+  }
+
+  async updateStudyGroup(id: number, groupUpdate: Partial<StudyGroup>): Promise<StudyGroup | undefined> {
+    const group = this.studyGroups.get(id);
+    if (!group) return undefined;
+    
+    const updatedGroup = { ...group, ...groupUpdate };
+    this.studyGroups.set(id, updatedGroup);
+    return updatedGroup;
+  }
+
+  async deleteStudyGroup(id: number): Promise<boolean> {
+    // First delete all memberships
+    const membershipKeys = Array.from(this.studyGroupMembers.keys()).filter(
+      key => key.startsWith(`${id}-`)
+    );
+    
+    for (const key of membershipKeys) {
+      this.studyGroupMembers.delete(key);
+    }
+    
+    // Then delete the group
+    return this.studyGroups.delete(id);
+  }
+
+  // Study Group Membership methods
+  async getStudyGroupMembers(groupId: number): Promise<(StudyGroupMember & { username: string })[]> {
+    const members = Array.from(this.studyGroupMembers.values()).filter(
+      member => member.groupId === groupId
+    );
+    
+    return members.map(member => {
+      const user = this.users.get(member.userId);
+      return {
+        ...member,
+        username: user ? user.username : 'Unknown User'
+      };
+    });
+  }
+
+  async getStudyGroupsForUser(userId: number): Promise<StudyGroup[]> {
+    const membershipKeys = Array.from(this.studyGroupMembers.keys()).filter(
+      key => key.endsWith(`-${userId}`) && this.studyGroupMembers.get(key)!.status === "active"
+    );
+    
+    return membershipKeys.map(key => {
+      const groupId = parseInt(key.split('-')[0]);
+      return this.studyGroups.get(groupId)!;
+    }).filter(Boolean);
+  }
+
+  async addUserToStudyGroup(membership: InsertStudyGroupMember): Promise<StudyGroupMember> {
+    const membershipWithDate = {
+      ...membership,
+      joinedAt: new Date()
+    };
+    
+    const key = `${membership.groupId}-${membership.userId}`;
+    this.studyGroupMembers.set(key, membershipWithDate);
+    return membershipWithDate;
+  }
+
+  async removeUserFromStudyGroup(groupId: number, userId: number): Promise<boolean> {
+    const key = `${groupId}-${userId}`;
+    return this.studyGroupMembers.delete(key);
+  }
+
+  async getStudyGroupLeaderboard(groupId: number): Promise<{userId: number, username: string, totalDuration: number}[]> {
+    // Get all users in the group
+    const members = Array.from(this.studyGroupMembers.values()).filter(
+      member => member.groupId === groupId && member.status === "active"
+    );
+    
+    // Calculate total study time for each member
+    const result = members.map(member => {
+      const userSessions = Array.from(this.studySessions.values()).filter(
+        session => session.userId === member.userId
+      );
+      
+      const totalDuration = userSessions.reduce(
+        (sum, session) => sum + (session.duration || 0),
+        0
+      );
+      
+      const user = this.users.get(member.userId);
+      
+      return {
+        userId: member.userId,
+        username: user ? user.username : 'Unknown User',
+        totalDuration
+      };
+    });
+    
+    // Sort by total duration descending
+    return result.sort((a, b) => b.totalDuration - a.totalDuration);
   }
 }
 

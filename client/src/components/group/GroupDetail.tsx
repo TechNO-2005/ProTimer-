@@ -119,14 +119,27 @@ export function GroupDetail({
         </Button>
       </div>
       
-      <div>
+      <div className="bg-gray-900 p-6 rounded-xl">
         <h2 className="text-3xl font-bold mb-2">{group.name}</h2>
         {group.description && (
-          <p className="text-gray-400 text-lg">{group.description}</p>
+          <p className="text-gray-300 text-lg mb-3">{group.description}</p>
         )}
-        <p className="text-gray-500 mt-2 text-sm">
-          Created: {new Date(group.createdAt).toLocaleDateString()}
-        </p>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-4">
+          <p className="text-gray-400 text-sm flex items-center">
+            <span className="inline-block w-3 h-3 bg-teal-500 rounded-full mr-2"></span>
+            Created {new Date(group.createdAt).toLocaleDateString()}
+          </p>
+          {members?.some(member => member.userId === group.createdBy) && (
+            <p className="text-gray-400 text-sm flex items-center">
+              <span className="inline-block w-3 h-3 bg-teal-500 rounded-full mr-2"></span>
+              Creator: {members.find(member => member.userId === group.createdBy)?.username}
+            </p>
+          )}
+          <p className="text-gray-400 text-sm flex items-center">
+            <span className="inline-block w-3 h-3 bg-teal-500 rounded-full mr-2"></span>
+            {members?.length || 0} Members
+          </p>
+        </div>
       </div>
       
       {!isUserMember && (
@@ -162,17 +175,25 @@ export function GroupDetail({
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {members.map((member) => (
-                <div key={member.userId} className="bg-gray-800 rounded-lg p-4">
+                <div 
+                  key={member.userId} 
+                  className={`${member.status === 'admin' || member.userId === group.createdBy ? 'bg-gray-800 border border-teal-600' : 'bg-gray-800'} rounded-lg p-4 transition-all hover:bg-gray-700`}
+                >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-medium">{member.username}</h4>
+                      <h4 className="font-medium flex items-center">
+                        {member.username}
+                        {member.userId === user?.id && (
+                          <span className="ml-2 text-teal-400 text-xs">(You)</span>
+                        )}
+                      </h4>
                       <p className="text-sm text-gray-400">
                         Joined: {new Date(member.joinedAt).toLocaleDateString()}
                       </p>
                     </div>
-                    {member.userId === group.createdBy && (
-                      <div className="px-2 py-1 bg-teal-800 text-teal-100 text-xs rounded">
-                        Admin
+                    {(member.status === 'admin' || member.userId === group.createdBy) && (
+                      <div className="px-3 py-1 bg-teal-800 text-teal-100 text-xs rounded-full flex items-center">
+                        Admin {member.userId === group.createdBy && '• Creator'}
                       </div>
                     )}
                   </div>

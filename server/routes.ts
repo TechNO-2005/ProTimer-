@@ -542,6 +542,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const group = await storage.createStudyGroup(groupData);
+      
+      // Automatically add creator as an admin member of the group
+      await storage.addUserToStudyGroup({
+        userId: req.user!.id,
+        groupId: group.id,
+        status: 'admin'
+      });
+      
       res.status(201).json(group);
     } catch (error) {
       res.status(400).json({ message: "Invalid study group data", error });

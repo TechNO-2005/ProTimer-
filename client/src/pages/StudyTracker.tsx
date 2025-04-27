@@ -4,7 +4,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
-import { Pause, Play, Plus, X, Settings, Clock, Users, Search, UserPlus, PlusCircle } from "lucide-react";
+import { Pause, Play, Plus, X, Settings, Clock, Users, Search, UserPlus, PlusCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -151,6 +151,12 @@ export default function StudyTracker() {
     refetch: search,
   } = useQuery<StudyGroup[]>({
     queryKey: ["/api/study-groups/search", searchQuery],
+    queryFn: async () => {
+      if (!searchQuery) return [];
+      const res = await fetch(`/api/study-groups/search?q=${encodeURIComponent(searchQuery)}`);
+      if (!res.ok) throw new Error("Failed to search for groups");
+      return res.json();
+    },
     enabled: false,
   });
   
@@ -386,10 +392,17 @@ export default function StudyTracker() {
     joinGroupMutation.mutate(groupId);
   };
   
-  const handleSearch = (values: SearchGroupFormValues) => {
+  const handleSearch = async (values: SearchGroupFormValues) => {
     setSearchQuery(values.searchTerm);
-    search();
-    setShowSearchDialog(false);
+    try {
+      await search();
+    } catch (error) {
+      toast({
+        title: "Search Failed",
+        description: "Failed to search for study groups. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Reset settings form when dialog opens
@@ -885,15 +898,29 @@ export default function StudyTracker() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Search Term</FormLabel>
-                      <div className="flex space-x-2">
-                        <FormControl>
+                      <FormControl>
+                        <div className="relative">
                           <Input placeholder="Mathematics, Physics, etc." {...field} />
-                        </FormControl>
-                        <Button type="submit" size="sm" className="px-3">
-                          <Search className="h-4 w-4 mr-2" />
-                          Search
-                        </Button>
-                      </div>
+                          <Button 
+                            type="submit" 
+                            size="sm" 
+                            className="absolute right-1 top-1 h-8 px-3 bg-teal-600 hover:bg-teal-700 text-white"
+                            disabled={isSearching}
+                          >
+                            {isSearching ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Search className="h-4 w-4 mr-2" />
+                                Search
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormDescription>
+                        Enter a keyword to find study groups by name or description
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -902,35 +929,60 @@ export default function StudyTracker() {
             </Form>
             
             {isSearching ? (
-              <div className="py-4 text-center">Searching...</div>
+              <div className="py-8 text-center">
+                <Loader2 className="h-8 w-8 animate-spin text-teal-500 mx-auto mb-4" />
+                <p>Searching for study groups...</p>
+              </div>
             ) : searchResults && searchResults.length > 0 ? (
-              <div className="space-y-3 mt-4 max-h-[300px] overflow-y-auto">
-                <h3 className="font-medium">Search Results:</h3>
+              <div className="space-y-3 mt-6 max-h-[300px] overflow-y-auto pr-2">
+                <h3 className="font-medium text-lg">Search Results ({searchResults.length})</h3>
                 {searchResults.map((group) => (
-                  <div key={group.id} className="bg-gray-800 p-3 rounded-lg">
+                  <div key={group.id} className="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-colors">
                     <div className="flex justify-between">
                       <div>
-                        <h4 className="font-medium">{group.name}</h4>
+                        <h4 className="font-medium text-lg">{group.name}</h4>
                         {group.description && (
-                          <p className="text-sm text-gray-400">{group.description}</p>
+                          <p className="text-sm text-gray-400 mt-1">{group.description}</p>
                         )}
+                        <p className="text-xs text-gray-500 mt-2">
+                          Created: {new Date(group.createdAt).toLocaleDateString()}
+                        </p>
                       </div>
                       <Button 
                         onClick={() => handleJoinGroup(group.id)} 
                         variant="outline" 
                         size="sm" 
-                        className="self-start"
+                        className="self-start border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-black"
+                        disabled={joinGroupMutation.isPending}
                       >
-                        <UserPlus className="h-4 w-4 mr-1" />
-                        Join
+                        {joinGroupMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <UserPlus className="h-4 w-4 mr-1" />
+                            Join
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>
                 ))}
               </div>
             ) : searchQuery && (
-              <div className="py-4 text-center text-gray-400">
-                No study groups found matching your search.
+              <div className="py-8 text-center text-gray-400">
+                <p>No study groups found matching "{searchQuery}"</p>
+                <p className="mt-2 text-sm">Try a different search term or create your own group</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-4 border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-black"
+                  onClick={() => {
+                    setShowSearchDialog(false);
+                    setShowCreateDialog(true);
+                  }}
+                >
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Create a New Group
+                </Button>
               </div>
             )}
           </DialogContent>

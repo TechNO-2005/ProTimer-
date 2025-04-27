@@ -18,6 +18,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -429,20 +430,25 @@ export default function StudyTracker() {
         </div>
 
         <div className="flex justify-center gap-4 mb-8">
-          <Button 
-            variant={mode === "pomodoro" ? "default" : "outline"}
-            onClick={() => setMode("pomodoro")}
-            className={mode === "pomodoro" ? "bg-white text-black" : ""}
-          >
-            Pomodoro Mode
-          </Button>
-          <Button 
-            variant={mode === "groups" ? "default" : "outline"}
-            onClick={() => setMode("groups")}
-            className={mode === "groups" ? "bg-white text-black" : ""}
-          >
-            Groups
-          </Button>
+          <div className="flex relative">
+            <div 
+              className={`w-[400px] h-24 rounded-[70px] ${mode === "pomodoro" ? "bg-black shadow-[0_0_6px_6px_rgba(224.66,234.09,232.68,0.45)]" : "bg-[rgba(249,249,249,0.57)] shadow-[0_0_6px_6px_rgba(224.66,234.09,232.68,0.45)]"}`}
+              onClick={() => setMode("pomodoro")}
+            >
+              <div className="h-full flex items-center justify-center cursor-pointer">
+                <span className="text-white text-3xl font-medium">Pomodoro Mode</span>
+              </div>
+            </div>
+            
+            <div 
+              className={`w-[210px] h-24 rounded-[70px] ml-4 ${mode === "groups" ? "bg-black shadow-[0_0_6px_6px_rgba(224.66,234.09,232.68,0.45)]" : "bg-[rgba(249,249,249,0.57)] shadow-[0_0_6px_6px_rgba(224.66,234.09,232.68,0.45)]"}`}
+              onClick={() => setMode("groups")}
+            >
+              <div className="h-full flex items-center justify-center cursor-pointer">
+                <span className="text-white text-3xl font-medium">Groups</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Pomodoro Mode */}
@@ -526,112 +532,161 @@ export default function StudyTracker() {
         
         {/* Groups Mode */}
         {mode === "groups" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Study Groups List */}
-            <div className="bg-black rounded-[50px] shadow-[0_0_15px_15px_rgba(225,234,233,0.45)_inset] p-8">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-medium">My Study Groups</h2>
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={() => setShowSearchDialog(true)} 
-                    variant="ghost" 
-                    size="sm"
-                    className="text-teal-500 hover:text-teal-300"
-                  >
-                    <Search className="w-5 h-5" />
-                  </Button>
-                  <Button 
-                    onClick={() => setShowCreateDialog(true)} 
-                    variant="ghost" 
-                    size="sm"
-                    className="text-teal-500 hover:text-teal-300"
-                  >
-                    <PlusCircle className="w-5 h-5" />
-                  </Button>
-                </div>
-              </div>
-              
-              {isGroupsLoading ? (
-                <div className="py-8 text-center">Loading study groups...</div>
-              ) : (
-                <div className="space-y-4">
-                  {studyGroups && studyGroups.length > 0 ? (
-                    studyGroups.map((group) => (
-                      <Link key={group.id} href={`/study-group/${group.id}`} className="block">
-                        <div className="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-colors">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h3 className="text-xl font-medium">{group.name}</h3>
-                              {group.description && (
-                                <p className="text-gray-400 mt-1">{group.description}</p>
-                              )}
-                            </div>
-                            <div className="flex flex-col items-end">
-                              <span className="text-xs text-gray-400">
-                                {new Date(group.createdAt).toLocaleDateString()}
-                              </span>
-                              {group.isPrivate && (
-                                <span className="text-xs mt-1 px-2 py-0.5 bg-gray-700 rounded-full">Private</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    ))
-                  ) : (
-                    <div className="text-center text-gray-400 py-8">
-                      You're not a member of any study groups yet. Create or join one to get started!
-                    </div>
-                  )}
-                  
-                  <div className="flex gap-2 mt-6">
-                    <Button 
-                      onClick={() => setShowCreateDialog(true)} 
-                      variant="outline" 
-                      className="flex-1 border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-black"
-                    >
-                      <PlusCircle className="mr-2 h-5 w-5" /> Create Group
-                    </Button>
-                    <Button 
-                      onClick={() => setShowSearchDialog(true)} 
-                      variant="outline" 
-                      className="flex-1 border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-black"
-                    >
-                      <Search className="mr-2 h-5 w-5" /> Find Groups
-                    </Button>
-                  </div>
-                </div>
-              )}
+          <div className="flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-medium ml-4">My Groups</h2>
+              <Button 
+                onClick={() => setShowCreateDialog(true)} 
+                variant="ghost" 
+                size="icon"
+                className="rounded-full bg-black shadow-[0_0_6px_6px_rgba(225,234,233,0.45)] w-12 h-12 flex items-center justify-center mr-4"
+              >
+                <PlusCircle className="w-6 h-6 text-white" />
+              </Button>
             </div>
             
-            {/* Timer Panel (Same as in Pomodoro mode for consistency) */}
-            <div className="bg-black rounded-[50px] shadow-[0_0_15px_15px_rgba(225,234,233,0.45)_inset] p-8 flex flex-col items-center justify-center">
-              <h2 className="text-2xl font-semibold mb-8">
-                {selectedSession ? `Focus Time: ${selectedSession.subject}` : "Focus Time"}
-              </h2>
+            {isGroupsLoading ? (
+              <div className="py-8 text-center">Loading study groups...</div>
+            ) : (
+              <div className="space-y-8">
+                {/* Show predefined example groups if no actual groups exist */}
+                {(!studyGroups || studyGroups.length === 0) ? (
+                  <>
+                    <div className="group-item">
+                      <div className="px-8">
+                        <h3 className="text-4xl font-normal">Chanakyans UPSC</h3>
+                        <p className="text-gray-400 text-xl mt-2">Others - 56</p>
+                      </div>
+                      <div className="border-t border-gray-400 my-4 mx-8"></div>
+                    </div>
+                    
+                    <div className="group-item">
+                      <div className="px-8">
+                        <h3 className="text-4xl font-normal">Chanakyans BCA</h3>
+                        <p className="text-gray-400 text-xl mt-2">Others - 29</p>
+                      </div>
+                      <div className="border-t border-gray-400 my-4 mx-8"></div>
+                    </div>
+                    
+                    <div className="group-item">
+                      <div className="px-8">
+                        <h3 className="text-4xl font-normal">Chanakyans CAT</h3>
+                        <p className="text-gray-400 text-xl mt-2">Others - 35</p>
+                      </div>
+                      <div className="border-t border-gray-400 my-4 mx-8"></div>
+                    </div>
+                  </>
+                ) : (
+                  studyGroups.map((group) => (
+                    <div key={group.id} className="group-item">
+                      <Link href={`/study-group/${group.id}`} className="block px-8">
+                        <h3 className="text-4xl font-normal">{group.name}</h3>
+                        <p className="text-gray-400 text-xl mt-2">
+                          {group.description || `Created: ${new Date(group.createdAt).toLocaleDateString()}`}
+                        </p>
+                      </Link>
+                      <div className="border-t border-gray-400 my-4 mx-8"></div>
+                    </div>
+                  ))
+                )}
+                
+                <div className="flex justify-center mt-8">
+                  <Button 
+                    onClick={() => setShowSearchDialog(true)} 
+                    variant="outline" 
+                    className="border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-black px-6"
+                  >
+                    <Search className="mr-2 h-5 w-5" /> Find More Groups
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {/* Group Study Participants with Timer */}
+            <div className="mt-12">
+              <h2 className="text-2xl font-medium ml-4 mb-6">Group Study Session</h2>
               
-              <div className="w-40 h-40 rounded-full bg-gray-800 flex items-center justify-center mb-8">
-                {selectedSession?.subject?.charAt(0) || "S"}
+              <div className="grid grid-cols-2 gap-8 mt-6">
+                {/* Example Group Members with Study Times */}
+                <div className="flex flex-col items-center">
+                  <div className="bg-black rounded-[20px] shadow-[0_0_10px_10px_rgba(84.58,174,174,0.90)_inset] w-32 h-44">
+                    <div className="h-full flex flex-col items-center justify-between py-4">
+                      <span className="text-white font-bold text-xl">
+                        {selectedSession?.subject?.charAt(0) || "S"}
+                      </span>
+                      <span className="text-white font-bold text-lg">You</span>
+                      <span className="text-white font-bold">
+                        {formatTime(timer)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-2 text-sm font-medium">Current Session</div>
+                </div>
+
+                <div className="flex flex-col items-center">
+                  <div className="bg-black rounded-[20px] shadow-[0_0_10px_10px_rgba(225,234,233,0.45)_inset] w-32 h-44">
+                    <div className="h-full flex flex-col items-center justify-between py-4">
+                      <span className="text-white font-bold text-xl">K</span>
+                      <span className="text-white font-bold text-lg">Kane_22</span>
+                      <span className="text-white font-bold">00:45:30</span>
+                    </div>
+                  </div>
+                  <div className="mt-2 text-sm font-medium">Total Today</div>
+                </div>
               </div>
               
-              <div className="text-6xl font-bold mb-6">
-                {formatTime(timer)}
+              <div className="grid grid-cols-4 gap-4 mt-8">
+                <div className="flex flex-col items-center">
+                  <div className="bg-black rounded-[20px] shadow-[0_0_10px_10px_rgba(225,234,233,0.45)_inset] w-32 h-44">
+                    <div className="h-full flex flex-col items-center justify-between py-4">
+                      <span className="text-white font-bold text-xl">A</span>
+                      <span className="text-white font-bold text-sm">Agarwal_30</span>
+                      <span className="text-white font-bold">00:30:30</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col items-center">
+                  <div className="bg-black rounded-[20px] shadow-[0_0_10px_10px_rgba(225,234,233,0.45)_inset] w-32 h-44">
+                    <div className="h-full flex flex-col items-center justify-between py-4">
+                      <span className="text-white font-bold text-xl">S</span>
+                      <span className="text-white font-bold text-sm">Seema_25</span>
+                      <span className="text-white font-bold">00:19:30</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col items-center">
+                  <div className="bg-black rounded-[20px] shadow-[0_0_10px_10px_rgba(225,234,233,0.45)_inset] w-32 h-44">
+                    <div className="h-full flex flex-col items-center justify-between py-4">
+                      <span className="text-white font-bold text-xl">R</span>
+                      <span className="text-white font-bold text-sm">Reema_25</span>
+                      <span className="text-white font-bold">00:14:30</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col items-center">
+                  <div className="bg-black rounded-[20px] shadow-[0_0_10px_10px_rgba(84.58,174,174,0.90)_inset] w-32 h-44">
+                    <div className="h-full flex flex-col items-center justify-between py-4">
+                      <span className="text-white font-bold text-xl">R</span>
+                      <span className="text-white font-bold text-sm">Reema_25</span>
+                      <span className="text-white font-bold">00:10:30</span>
+                    </div>
+                  </div>
+                </div>
               </div>
               
-              <div className="flex gap-4">
+              <div className="flex justify-center mt-8">
                 {isRunning ? (
                   <Button onClick={handleStopSession} variant="outline" size="lg" className="border-red-500 text-red-500 hover:bg-red-500 hover:text-black">
-                    <Pause className="mr-2" /> Stop
+                    <Pause className="mr-2" /> Stop Session
                   </Button>
                 ) : (
                   <Button onClick={() => setShowSubjectDialog(true)} variant="outline" size="lg" className="border-green-500 text-green-500 hover:bg-green-500 hover:text-black">
-                    <Play className="mr-2" /> Start
+                    <Play className="mr-2" /> Start Session
                   </Button>
                 )}
-                
-                <Button onClick={() => setShowSettingsDialog(true)} variant="outline" size="lg">
-                  <Settings className="mr-2" /> Settings
-                </Button>
               </div>
             </div>
           </div>

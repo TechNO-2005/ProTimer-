@@ -7,7 +7,7 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 import connectPg from "connect-pg-simple";
 import { db, pool } from "./db";
-import { eq, and, sql, like, or, desc, asc } from "drizzle-orm";
+import { eq, and, sql, like, or, desc, asc, inArray } from "drizzle-orm";
 
 const MemoryStore = createMemoryStore(session);
 const PostgresSessionStore = connectPg(session);
@@ -780,6 +780,28 @@ export class MemStorage implements IStorage {
 
   async deleteStudySession(id: number): Promise<boolean> {
     return this.studySessions.delete(id);
+  }
+
+  async getActiveStudySessionsByGroupId(groupId: number): Promise<(StudySession & { username: string })[]> {
+    // Get all users who are members of the group
+    const groupMembers = await this.getStudyGroupMembers(groupId);
+    const memberUserIds = groupMembers.map(member => member.userId);
+    
+    // Filter all active sessions that belong to group members
+    const activeSessions = Array.from(this.studySessions.values())
+      .filter(session => 
+        memberUserIds.includes(session.userId) && 
+        session.isActive === true
+      )
+      .map(session => {
+        const user = this.users.get(session.userId);
+        return {
+          ...session,
+          username: user?.username || "Unknown"
+        };
+      });
+      
+    return activeSessions;
   }
 
   async getTotalStudyTimeBySubject(userId: number): Promise<{subject: string, duration: number}[]> {

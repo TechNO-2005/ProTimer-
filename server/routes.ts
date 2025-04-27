@@ -657,6 +657,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const leaderboard = await storage.getStudyGroupLeaderboard(Number(id));
     res.json(leaderboard);
   });
+  
+  // Get active study sessions for a group
+  app.get("/api/study-groups/:id/active-sessions", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { id } = req.params;
+    
+    const group = await storage.getStudyGroupById(Number(id));
+    if (!group) return res.status(404).json({ message: "Study group not found" });
+    
+    // Get active study sessions for the group
+    const activeSessions = await storage.getActiveStudySessionsByGroupId(Number(id));
+    res.json(activeSessions);
+  });
 
   const httpServer = createServer(app);
 

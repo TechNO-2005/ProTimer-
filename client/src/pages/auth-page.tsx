@@ -10,9 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, CalendarDays, BarChart2, BookOpen, Mail, Loader2 } from "lucide-react";
-import { FaGoogle } from "react-icons/fa";
-import { Separator } from "@/components/ui/separator";
+import { Clock, CalendarDays, BarChart2, BookOpen, Mail, Loader2, User } from "lucide-react";
 
 // Create the schema with zod for login
 const loginSchema = z.object({
@@ -41,13 +39,9 @@ const AuthPage = () => {
     user, 
     loginMutation, 
     registerMutation, 
-    enableGuestMode,
-    loginWithGoogle,
-    loginWithEmail,
-    registerWithEmail
+    enableGuestMode 
   } = useAuth();
   
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isEmailLoading, setIsEmailLoading] = useState(false);
   const [isEmailRegisterLoading, setIsEmailRegisterLoading] = useState(false);
   
@@ -78,20 +72,7 @@ const AuthPage = () => {
     }
   }, [user, navigate]);
   
-  // Handle Google sign in
-  const handleGoogleSignIn = async () => {
-    try {
-      setIsGoogleLoading(true);
-      // Google sign-in should now work with the authorized domain
-      await loginWithGoogle();
-      window.location.href = "/"; // Direct navigation for page reload
-    } catch (error) {
-      console.error("Google sign in failed:", error);
-      alert("Google sign-in failed. This might be because the domain is not yet authorized in Firebase. Please try email/password sign-in instead.");
-    } finally {
-      setIsGoogleLoading(false);
-    }
-  };
+  // Removed Google sign in
   
   // Handle email login form submission
   const onLoginSubmit = async (values: LoginFormValues) => {
@@ -155,27 +136,6 @@ const AuthPage = () => {
                   <CardDescription>Enter your credentials to access your account</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full flex items-center justify-center gap-2"
-                    onClick={handleGoogleSignIn}
-                    disabled={isGoogleLoading}
-                  >
-                    {isGoogleLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <FaGoogle className="h-4 w-4 text-red-500" />
-                    )}
-                    {isGoogleLoading ? "Connecting..." : "Sign in with Google"}
-                  </Button>
-                  
-                  <div className="flex items-center gap-2">
-                    <Separator className="flex-1" />
-                    <span className="text-xs text-gray-500">OR</span>
-                    <Separator className="flex-1" />
-                  </div>
-                  
                   <Form {...loginForm}>
                     <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                       <FormField
@@ -264,27 +224,6 @@ const AuthPage = () => {
                   <CardDescription>Sign up to start using ProTimer</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full flex items-center justify-center gap-2"
-                    onClick={handleGoogleSignIn}
-                    disabled={isGoogleLoading}
-                  >
-                    {isGoogleLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <FaGoogle className="h-4 w-4 text-red-500" />
-                    )}
-                    {isGoogleLoading ? "Connecting..." : "Sign up with Google"}
-                  </Button>
-                  
-                  <div className="flex items-center gap-2">
-                    <Separator className="flex-1" />
-                    <span className="text-xs text-gray-500">OR</span>
-                    <Separator className="flex-1" />
-                  </div>
-                  
                   <Form {...registerForm}>
                     <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
                       <FormField

@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import { Pause, Play, Plus, X, Settings, Clock, Users, Search, UserPlus, PlusCircle, Loader2 } from "lucide-react";
+import { GroupDetail } from "@/components/group/GroupDetail";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -143,6 +144,7 @@ export default function StudyTracker() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showSearchDialog, setShowSearchDialog] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<StudyGroup | null>(null);
   
   // Query for search results
   const {
@@ -314,8 +316,21 @@ export default function StudyTracker() {
       const res = await apiRequest("POST", `/api/study-groups/${groupId}/join`);
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/study-groups"] });
+      
+      // Close search dialog and reset search form
+      setShowSearchDialog(false);
+      searchGroupForm.reset();
+      
+      // Find and select the group that was just joined
+      const joined = studyGroups?.find(g => g.id === variables) || 
+                     searchResults?.find(g => g.id === variables);
+      
+      if (joined) {
+        setSelectedGroup(joined);
+      }
+      
       toast({
         title: "Group joined",
         description: "You have joined the study group",
@@ -546,75 +561,88 @@ export default function StudyTracker() {
         {/* Groups Mode */}
         {mode === "groups" && (
           <div className="flex flex-col">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-medium ml-4">My Groups</h2>
-              <Button 
-                onClick={() => setShowCreateDialog(true)} 
-                variant="ghost" 
-                size="icon"
-                className="rounded-full bg-black shadow-[0_0_6px_6px_rgba(225,234,233,0.45)] w-12 h-12 flex items-center justify-center mr-4"
-              >
-                <PlusCircle className="w-6 h-6 text-white" />
-              </Button>
-            </div>
-            
-            {isGroupsLoading ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <Loader2 className="h-12 w-12 text-teal-500 mb-4 animate-spin" />
-                <p className="text-gray-300 text-lg">Loading your study groups...</p>
-              </div>
+            {selectedGroup ? (
+              <GroupDetail 
+                group={selectedGroup} 
+                onBack={() => setSelectedGroup(null)} 
+              />
             ) : (
-              <div className="space-y-8">
-                {(!studyGroups || studyGroups.length === 0) ? (
-                  <div className="flex flex-col items-center justify-center p-10 mt-8 border border-dashed border-gray-700 rounded-2xl">
-                    <div className="text-center mb-8">
-                      <h3 className="text-2xl mb-3 font-medium">You haven't joined any study groups yet</h3>
-                      <p className="text-gray-400 max-w-md mx-auto">Create your own group or search for existing ones to collaborate with other students</p>
-                    </div>
-                    <div className="flex gap-4">
-                      <Button 
-                        onClick={() => setShowCreateDialog(true)} 
-                        className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-5 h-auto rounded-xl"
-                      >
-                        <PlusCircle className="mr-2 h-5 w-5" /> Create New Group
-                      </Button>
-                      <Button 
-                        onClick={() => setShowSearchDialog(true)} 
-                        variant="outline" 
-                        className="border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-black px-6 py-5 h-auto rounded-xl"
-                      >
-                        <Search className="mr-2 h-5 w-5" /> Find Groups
-                      </Button>
-                    </div>
+              <>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-medium ml-4">My Groups</h2>
+                  <Button 
+                    onClick={() => setShowCreateDialog(true)} 
+                    variant="ghost" 
+                    size="icon"
+                    className="rounded-full bg-black shadow-[0_0_6px_6px_rgba(225,234,233,0.45)] w-12 h-12 flex items-center justify-center mr-4"
+                  >
+                    <PlusCircle className="w-6 h-6 text-white" />
+                  </Button>
+                </div>
+                
+                {isGroupsLoading ? (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <Loader2 className="h-12 w-12 text-teal-500 mb-4 animate-spin" />
+                    <p className="text-gray-300 text-lg">Loading your study groups...</p>
                   </div>
                 ) : (
-                  studyGroups.map((group) => (
-                    <div key={group.id} className="group-item bg-gray-900 bg-opacity-40 rounded-xl hover:bg-gray-800 transition-all duration-200">
-                      <Link href={`/study-group/${group.id}`} className="block px-8 py-4">
-                        <h3 className="text-3xl font-normal text-white">{group.name}</h3>
-                        <p className="text-gray-400 text-lg mt-2">
-                          {group.description || "No description provided"}
-                        </p>
-                        <p className="text-gray-500 text-sm mt-2">
-                          Created: {new Date(group.createdAt).toLocaleDateString()}
-                        </p>
-                      </Link>
-                    </div>
-                  ))
-                )}
-                
-                {studyGroups && studyGroups.length > 0 && (
-                  <div className="flex justify-center mt-12">
-                    <Button 
-                      onClick={() => setShowSearchDialog(true)} 
-                      variant="outline" 
-                      className="border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-black px-8 py-6 h-auto rounded-xl"
-                    >
-                      <Search className="mr-2 h-5 w-5" /> Find More Groups
-                    </Button>
+                  <div className="space-y-8">
+                    {(!studyGroups || studyGroups.length === 0) ? (
+                      <div className="flex flex-col items-center justify-center p-10 mt-8 border border-dashed border-gray-700 rounded-2xl">
+                        <div className="text-center mb-8">
+                          <h3 className="text-2xl mb-3 font-medium">You haven't joined any study groups yet</h3>
+                          <p className="text-gray-400 max-w-md mx-auto">Create your own group or search for existing ones to collaborate with other students</p>
+                        </div>
+                        <div className="flex gap-4">
+                          <Button 
+                            onClick={() => setShowCreateDialog(true)} 
+                            className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-5 h-auto rounded-xl"
+                          >
+                            <PlusCircle className="mr-2 h-5 w-5" /> Create New Group
+                          </Button>
+                          <Button 
+                            onClick={() => setShowSearchDialog(true)} 
+                            variant="outline" 
+                            className="border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-black px-6 py-5 h-auto rounded-xl"
+                          >
+                            <Search className="mr-2 h-5 w-5" /> Find Groups
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      studyGroups.map((group) => (
+                        <div 
+                          key={group.id} 
+                          className="group-item bg-gray-900 bg-opacity-40 rounded-xl hover:bg-gray-800 transition-all duration-200 cursor-pointer"
+                          onClick={() => setSelectedGroup(group)}
+                        >
+                          <div className="block px-8 py-4">
+                            <h3 className="text-3xl font-normal text-white">{group.name}</h3>
+                            <p className="text-gray-400 text-lg mt-2">
+                              {group.description || "No description provided"}
+                            </p>
+                            <p className="text-gray-500 text-sm mt-2">
+                              Created: {new Date(group.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                    
+                    {studyGroups && studyGroups.length > 0 && (
+                      <div className="flex justify-center mt-12">
+                        <Button 
+                          onClick={() => setShowSearchDialog(true)} 
+                          variant="outline" 
+                          className="border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-black px-8 py-6 h-auto rounded-xl"
+                        >
+                          <Search className="mr-2 h-5 w-5" /> Find More Groups
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
+              </>
             )}
             
             {/* Group Study Participants with Timer */}

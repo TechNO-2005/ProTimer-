@@ -458,7 +458,7 @@ export default function StudyTracker() {
     <div className="flex min-h-screen relative bg-black text-white">
       <Sidebar visible={sidebarVisible} onToggle={() => setSidebarVisible(!sidebarVisible)} />
       
-      <div className={`flex-1 transition-all duration-300 ${sidebarVisible ? 'md:ml-[280px]' : ''} px-4 py-6 md:px-8 md:py-8 overflow-y-auto`}>
+      <main className={`flex-1 transition-all duration-300 ${sidebarVisible ? 'md:ml-[280px]' : ''} px-4 py-6 md:px-8 md:py-8 overflow-y-auto`}>
         <div className="w-full text-center mb-8">
           <h1 className="text-4xl font-bold mb-2">Study Tracker</h1>
         </div>
@@ -1017,7 +1017,7 @@ export default function StudyTracker() {
             )}
           </DialogContent>
         </Dialog>
-      </div>
+      </main>
     </div>
   );
 }

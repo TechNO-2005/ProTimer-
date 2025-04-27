@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import { Pause, Play, Plus, X, Settings, Clock, Users, Search, UserPlus, PlusCircle, Loader2 } from "lucide-react";
 import { GroupDetail } from "@/components/group/GroupDetail";
+import { StudySidebar } from "@/components/layout/StudySidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -451,10 +452,12 @@ export default function StudyTracker() {
   }, 0);
 
   return (
-    <div className="w-full min-h-screen bg-black text-white">
-      <div className="container mx-auto px-4 py-8">
-        <div className="w-full text-center mb-12">
-          <h1 className="text-5xl font-bold mb-2">Study Tracker</h1>
+    <div className="flex w-full min-h-screen bg-black text-white">
+      <StudySidebar onStartSession={() => setShowSubjectDialog(true)} />
+      
+      <div className="flex-1 px-8 py-8 overflow-y-auto max-h-screen">
+        <div className="w-full text-center mb-8">
+          <h1 className="text-4xl font-bold mb-2">Study Tracker</h1>
         </div>
 
         <div className="flex justify-center gap-4 mb-8">

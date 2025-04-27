@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { formatDistanceToNow } from "date-fns";
+import { useState, useEffect } from "react";
 
 // Define types for the data
 interface StudyGroup {
@@ -28,6 +29,21 @@ interface LeaderboardEntry {
   username: string;
   totalDuration: number;
 }
+
+interface ActiveStudySession {
+  id: number;
+  userId: number;
+  subject: string;
+  taskName: string | null;
+  startTime: Date | string;
+  endTime: Date | null;
+  duration: number | null;
+  isActive: boolean;
+  breakDuration: number | null;
+  focusDuration: number | null;
+  createdAt: Date | null;
+  username: string;
+}
 import {
   Loader2,
   Users,
@@ -37,6 +53,12 @@ import {
   Timer,
   Trophy,
   Medal,
+  BarChart,
+  Clock,
+  AlertCircle,
+  Play,
+  PauseCircle,
+  RefreshCw,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -94,12 +116,33 @@ function formatStudyTime(minutes: number): string {
   return `${hours} ${hours === 1 ? 'hour' : 'hours'} ${remainingMinutes} min`;
 }
 
+// Helper function to format time in hh:mm:ss format
+function formatTimer(timeInSeconds: number): string {
+  const hours = Math.floor(timeInSeconds / 3600);
+  const minutes = Math.floor((timeInSeconds % 3600) / 60);
+  const seconds = timeInSeconds % 60;
+  
+  return [
+    hours.toString().padStart(2, '0'),
+    minutes.toString().padStart(2, '0'),
+    seconds.toString().padStart(2, '0')
+  ].join(':');
+}
+
+// Calculate elapsed time for active study sessions
+function calculateElapsedTime(startTimeStr: string | Date): number {
+  const startTime = new Date(startTimeStr);
+  const now = new Date();
+  return Math.floor((now.getTime() - startTime.getTime()) / 1000);
+}
+
 export default function StudyGroupDetail() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [, params] = useRoute("/study-groups/:id");
   const groupId = params?.id ? parseInt(params.id) : 0;
+  const [timers, setTimers] = useState<Record<number, number>>({});
 
   // Query to get study group details
   const {
@@ -130,6 +173,43 @@ export default function StudyGroupDetail() {
     queryKey: [`/api/study-groups/${groupId}/leaderboard`],
     enabled: !!groupId && !!user,
   });
+  
+  // Query to get active study sessions for the group
+  const {
+    data: activeSessions,
+    isLoading: isActiveSessionsLoading,
+    error: activeSessionsError,
+    refetch: refetchActiveSessions
+  } = useQuery<ActiveStudySession[]>({
+    queryKey: [`/api/study-groups/${groupId}/active-sessions`],
+    enabled: !!groupId && !!user,
+    refetchInterval: 10000, // Refetch every 10 seconds to keep the data fresh
+  });
+  
+  // Update timers for active sessions
+  useEffect(() => {
+    if (!activeSessions?.length) return;
+    
+    // Initialize timers
+    const initialTimers: Record<number, number> = {};
+    activeSessions.forEach(session => {
+      initialTimers[session.id] = calculateElapsedTime(session.startTime);
+    });
+    setTimers(initialTimers);
+    
+    // Set up timer interval to update every second
+    const interval = setInterval(() => {
+      setTimers(prevTimers => {
+        const newTimers = { ...prevTimers };
+        Object.keys(newTimers).forEach(key => {
+          newTimers[Number(key)] += 1;
+        });
+        return newTimers;
+      });
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [activeSessions]);
 
   // Mutation to leave the study group
   const leaveGroupMutation = useMutation({
@@ -322,8 +402,12 @@ export default function StudyGroupDetail() {
         </Card>
       </div>
 
-      <Tabs defaultValue="leaderboard" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs defaultValue="live-sessions" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="live-sessions">
+            <Clock className="h-4 w-4 mr-2" />
+            Live Sessions
+          </TabsTrigger>
           <TabsTrigger value="leaderboard">
             <Trophy className="h-4 w-4 mr-2" />
             Leaderboard
@@ -333,6 +417,107 @@ export default function StudyGroupDetail() {
             Members
           </TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="live-sessions" className="mt-4">
+          {activeSessionsError ? (
+            <div className="bg-destructive/20 p-4 rounded-md">
+              <h2 className="text-lg font-semibold text-destructive">Error</h2>
+              <p>Failed to load active study sessions. Please try again later.</p>
+            </div>
+          ) : isActiveSessionsLoading ? (
+            <div className="flex items-center justify-center min-h-[200px]">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : activeSessions?.length === 0 ? (
+            <div className="text-center py-12 border border-dashed rounded-lg bg-muted/40">
+              <Timer className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <h2 className="text-xl font-semibold mb-2">No Active Study Sessions</h2>
+              <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                No group members are currently studying. 
+                Active sessions will appear here in real time when members start studying.
+              </p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => refetchActiveSessions()}
+                className="gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Check Again
+              </Button>
+            </div>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Currently Studying</CardTitle>
+                <CardDescription>
+                  See what group members are studying right now
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {activeSessions?.map((session) => (
+                    <div 
+                      key={session.id}
+                      className={`p-4 rounded-lg border ${
+                        session.userId === user?.id 
+                          ? "border-primary border-2 bg-primary/5" 
+                          : "border-border"
+                      }`}
+                    >
+                      <div className="flex items-center mb-2">
+                        <Avatar className="h-8 w-8 mr-2">
+                          <AvatarFallback>
+                            {session.username.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium">
+                            {session.username}
+                            {session.userId === user?.id && (
+                              <span className="ml-2 text-xs text-muted-foreground">(You)</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="text-sm mb-3 text-primary">
+                        <div className="font-semibold">
+                          {session.subject}
+                          {session.taskName && (
+                            <span className="font-normal ml-1 text-muted-foreground">
+                              - {session.taskName}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Play className="h-4 w-4 text-green-500" />
+                        <div className="text-xl font-mono font-semibold">
+                          {formatTimer(timers[session.id] || calculateElapsedTime(session.startTime))}
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-between items-center mt-3 text-xs text-muted-foreground">
+                        <div>
+                          Started {formatDistanceToNow(new Date(session.startTime))} ago
+                        </div>
+                        {(session.focusDuration || session.breakDuration) && (
+                          <div>
+                            {session.focusDuration && `${session.focusDuration}m focus`}
+                            {session.focusDuration && session.breakDuration && " / "}
+                            {session.breakDuration && `${session.breakDuration}m break`}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
         
         <TabsContent value="leaderboard" className="mt-4">
           {leaderboardError ? (

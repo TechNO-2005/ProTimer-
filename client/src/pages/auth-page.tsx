@@ -74,13 +74,13 @@ const AuthPage = () => {
   
   // Removed Google sign in
   
-  // Handle email login form submission
+  // Handle login form submission
   const onLoginSubmit = async (values: LoginFormValues) => {
     try {
       setIsEmailLoading(true);
-      // Use the standard email/password authentication
+      // Use the standard username/password authentication
       await loginMutation.mutateAsync({
-        username: values.email, // Using email as username for login
+        username: values.email, // Using email field as username for login
         password: values.password
       });
       
@@ -143,11 +143,11 @@ const AuthPage = () => {
                         name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Email</FormLabel>
+                            <FormLabel>Username</FormLabel>
                             <FormControl>
                               <Input 
-                                type="email"
-                                placeholder="Enter your email" 
+                                type="text"
+                                placeholder="Enter your username" 
                                 {...field} 
                                 className="bg-gray-800 border-gray-700"
                               />
@@ -188,8 +188,8 @@ const AuthPage = () => {
                           </>
                         ) : (
                           <>
-                            <Mail className="mr-2 h-4 w-4" />
-                            Sign in with Email
+                            <User className="mr-2 h-4 w-4" />
+                            Sign in
                           </>
                         )}
                       </Button>
@@ -313,8 +313,8 @@ const AuthPage = () => {
                           </>
                         ) : (
                           <>
-                            <Mail className="mr-2 h-4 w-4" />
-                            Sign up with Email
+                            <User className="mr-2 h-4 w-4" />
+                            Sign up
                           </>
                         )}
                       </Button>

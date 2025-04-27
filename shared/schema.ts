@@ -108,3 +108,26 @@ export const insertMeetingSchema = createInsertSchema(meetings).omit({
 
 export type InsertMeeting = z.infer<typeof insertMeetingSchema>;
 export type Meeting = typeof meetings.$inferSelect;
+
+// Study Session Schema
+export const studySessions = pgTable("study_sessions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  subject: text("subject").notNull(),
+  taskName: text("task_name"),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time"),
+  duration: integer("duration").default(0), // Duration in seconds
+  isActive: boolean("is_active").default(true),
+  breakDuration: integer("break_duration").default(300), // Default 5 min break in seconds
+  focusDuration: integer("focus_duration").default(1500), // Default 25 min focus in seconds
+  createdAt: timestamp("created_at").defaultNow()
+});
+
+export const insertStudySessionSchema = createInsertSchema(studySessions).omit({
+  id: true,
+  createdAt: true
+});
+
+export type InsertStudySession = z.infer<typeof insertStudySessionSchema>;
+export type StudySession = typeof studySessions.$inferSelect;

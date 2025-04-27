@@ -1,12 +1,12 @@
-import { users, tasks, habits, flashcardDecks, flashcards, meetings } from "@shared/schema";
+import { users, tasks, habits, flashcardDecks, flashcards, meetings, studySessions } from "@shared/schema";
 import type { User, InsertUser, Task, InsertTask, Habit, InsertHabit, 
   FlashcardDeck, InsertFlashcardDeck, Flashcard, InsertFlashcard, 
-  Meeting, InsertMeeting } from "@shared/schema";
+  Meeting, InsertMeeting, StudySession, InsertStudySession } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import connectPg from "connect-pg-simple";
 import { db, pool } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 
 const MemoryStore = createMemoryStore(session);
 const PostgresSessionStore = connectPg(session);
@@ -52,6 +52,15 @@ export interface IStorage {
   createMeeting(meeting: InsertMeeting): Promise<Meeting>;
   updateMeeting(id: number, meeting: Partial<Meeting>): Promise<Meeting | undefined>;
   deleteMeeting(id: number): Promise<boolean>;
+  
+  // Study Session operations
+  getStudySessions(userId: number): Promise<StudySession[]>;
+  getActiveStudySession(userId: number): Promise<StudySession | undefined>;
+  getStudySessionById(id: number): Promise<StudySession | undefined>;
+  createStudySession(session: InsertStudySession): Promise<StudySession>;
+  updateStudySession(id: number, session: Partial<StudySession>): Promise<StudySession | undefined>;
+  deleteStudySession(id: number): Promise<boolean>;
+  getTotalStudyTimeBySubject(userId: number): Promise<{subject: string, duration: number}[]>;
   
   // Session store
   sessionStore: session.SessionStore;
@@ -237,6 +246,68 @@ export class DatabaseStorage implements IStorage {
     await db.delete(meetings).where(eq(meetings.id, id));
     return true;
   }
+
+  // Study Session methods
+  async getStudySessions(userId: number): Promise<StudySession[]> {
+    return await db.select().from(studySessions).where(eq(studySessions.userId, userId));
+  }
+
+  async getActiveStudySession(userId: number): Promise<StudySession | undefined> {
+    const [session] = await db.select().from(studySessions).where(
+      and(
+        eq(studySessions.userId, userId),
+        eq(studySessions.isActive, true)
+      )
+    );
+    return session;
+  }
+
+  async getStudySessionById(id: number): Promise<StudySession | undefined> {
+    const [session] = await db.select().from(studySessions).where(eq(studySessions.id, id));
+    return session;
+  }
+
+  async createStudySession(session: InsertStudySession): Promise<StudySession> {
+    // First deactivate any active sessions for this user
+    await db.update(studySessions)
+      .set({ isActive: false })
+      .where(
+        and(
+          eq(studySessions.userId, session.userId),
+          eq(studySessions.isActive, true)
+        )
+      );
+    
+    const [newSession] = await db.insert(studySessions).values(session).returning();
+    return newSession;
+  }
+
+  async updateStudySession(id: number, sessionUpdate: Partial<StudySession>): Promise<StudySession | undefined> {
+    const [updatedSession] = await db
+      .update(studySessions)
+      .set(sessionUpdate)
+      .where(eq(studySessions.id, id))
+      .returning();
+    return updatedSession;
+  }
+
+  async deleteStudySession(id: number): Promise<boolean> {
+    await db.delete(studySessions).where(eq(studySessions.id, id));
+    return true;
+  }
+
+  async getTotalStudyTimeBySubject(userId: number): Promise<{subject: string, duration: number}[]> {
+    // This performs the aggregation by subject
+    const result = await db.select({
+      subject: studySessions.subject,
+      duration: sql`sum(${studySessions.duration})`.mapWith(Number)
+    })
+    .from(studySessions)
+    .where(eq(studySessions.userId, userId))
+    .groupBy(studySessions.subject);
+    
+    return result;
+  }
 }
 
 // In-memory storage for development/testing if needed
@@ -247,6 +318,7 @@ export class MemStorage implements IStorage {
   private flashcardDecks: Map<number, FlashcardDeck>;
   private flashcards: Map<number, Flashcard>;
   private meetings: Map<number, Meeting>;
+  private studySessions: Map<number, StudySession>;
   sessionStore: session.SessionStore;
   currentId: {
     users: number;
@@ -255,6 +327,7 @@ export class MemStorage implements IStorage {
     flashcardDecks: number;
     flashcards: number;
     meetings: number;
+    studySessions: number;
   };
 
   constructor() {
@@ -264,6 +337,7 @@ export class MemStorage implements IStorage {
     this.flashcardDecks = new Map();
     this.flashcards = new Map();
     this.meetings = new Map();
+    this.studySessions = new Map();
     this.currentId = {
       users: 1,
       tasks: 1,
@@ -271,6 +345,7 @@ export class MemStorage implements IStorage {
       flashcardDecks: 1,
       flashcards: 1,
       meetings: 1,
+      studySessions: 1
     };
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // prune expired entries every 24h
@@ -454,6 +529,71 @@ export class MemStorage implements IStorage {
 
   async deleteMeeting(id: number): Promise<boolean> {
     return this.meetings.delete(id);
+  }
+
+  // Study Session methods
+  async getStudySessions(userId: number): Promise<StudySession[]> {
+    return Array.from(this.studySessions.values()).filter(
+      (session) => session.userId === userId
+    );
+  }
+
+  async getActiveStudySession(userId: number): Promise<StudySession | undefined> {
+    return Array.from(this.studySessions.values()).find(
+      (session) => session.userId === userId && session.isActive
+    );
+  }
+
+  async getStudySessionById(id: number): Promise<StudySession | undefined> {
+    return this.studySessions.get(id);
+  }
+
+  async createStudySession(session: InsertStudySession): Promise<StudySession> {
+    // First deactivate any active sessions for this user
+    const activeSessions = Array.from(this.studySessions.values()).filter(
+      (s) => s.userId === session.userId && s.isActive
+    );
+    
+    for (const activeSession of activeSessions) {
+      this.studySessions.set(activeSession.id, { ...activeSession, isActive: false });
+    }
+    
+    const id = this.currentId.studySessions++;
+    const newSession: StudySession = { ...session, id };
+    this.studySessions.set(id, newSession);
+    return newSession;
+  }
+
+  async updateStudySession(id: number, sessionUpdate: Partial<StudySession>): Promise<StudySession | undefined> {
+    const session = this.studySessions.get(id);
+    if (!session) return undefined;
+    
+    const updatedSession = { ...session, ...sessionUpdate };
+    this.studySessions.set(id, updatedSession);
+    return updatedSession;
+  }
+
+  async deleteStudySession(id: number): Promise<boolean> {
+    return this.studySessions.delete(id);
+  }
+
+  async getTotalStudyTimeBySubject(userId: number): Promise<{subject: string, duration: number}[]> {
+    const sessions = Array.from(this.studySessions.values()).filter(
+      (session) => session.userId === userId
+    );
+    
+    // Group sessions by subject and sum durations
+    const subjectMap = new Map<string, number>();
+    
+    for (const session of sessions) {
+      const currentDuration = subjectMap.get(session.subject) || 0;
+      subjectMap.set(session.subject, currentDuration + (session.duration || 0));
+    }
+    
+    return Array.from(subjectMap.entries()).map(([subject, duration]) => ({
+      subject,
+      duration
+    }));
   }
 }
 

@@ -1,0 +1,30 @@
+<div style={{width: 1440, height: 1024, position: 'relative', background: 'black', overflow: 'hidden'}}>
+  <div style={{width: 484, height: 468, left: 915, top: 332, position: 'absolute', background: 'black', boxShadow: '0px 0px 15px 15px rgba(225, 234, 233, 0.45) inset', borderRadius: 50}} />
+  <div style={{width: 211, height: 97, left: 772, top: 177, position: 'absolute', background: 'black', boxShadow: '0px 0px 6px 6px rgba(224.66, 234.09, 232.68, 0.45)', borderRadius: 70}} />
+  <div style={{width: 399, height: 97, left: 348, top: 177, position: 'absolute', background: 'rgba(255, 255, 255, 0.57)', boxShadow: '0px 0px 6px 6px rgba(224.66, 234.09, 232.68, 0.45)', borderRadius: 70}} />
+  <div style={{width: 366, height: 68, left: 367, top: 74, position: 'absolute', color: 'white', fontSize: 50, fontFamily: 'Inter', fontWeight: '700', wordWrap: 'break-word'}}>Study Tracker<br/></div>
+  <div style={{width: 316, height: 54, left: 407, top: 203, position: 'absolute', color: 'white', fontSize: 36, fontFamily: 'Inter', fontWeight: '500', wordWrap: 'break-word'}}>Pomodoro Mode</div>
+  <div style={{width: 183, height: 50, left: 812, top: 201, position: 'absolute', color: 'white', fontSize: 36, fontFamily: 'Inter', fontWeight: '500', wordWrap: 'break-word'}}>Groups<br/></div>
+  <img style={{width: 217, height: 217, left: 1057, top: 463, position: 'absolute', borderRadius: 94}} src="https://placehold.co/217x217" />
+  <div style={{width: 375, height: 73, left: 996, top: 683, position: 'absolute', color: 'white', fontSize: 64, fontFamily: 'Inter', fontWeight: '600', wordWrap: 'break-word'}}>00 : 25 : 00</div>
+  <div style={{width: 556, height: 632, left: 326, top: 338, position: 'absolute', background: 'black', boxShadow: '0px 0px 15px 15px rgba(225, 234, 233, 0.45) inset', borderRadius: 50}} />
+  <img style={{width: 45, height: 45, left: 357, top: 717, position: 'absolute', borderRadius: 348.50}} src="https://placehold.co/45x45" />
+  <img style={{width: 45, height: 45, left: 356, top: 630, position: 'absolute', borderRadius: 348.50}} src="https://placehold.co/45x45" />
+  <div style={{width: 430, height: 50, left: 447, top: 472, position: 'absolute', color: 'white', fontSize: 30, fontFamily: 'Inter', fontWeight: '400', wordWrap: 'break-word'}}>App Dev                 01:53:25</div>
+  <div style={{width: 423, height: 37, left: 446, top: 549, position: 'absolute', color: 'white', fontSize: 30, fontFamily: 'Inter', fontWeight: '400', wordWrap: 'break-word'}}>Geography            00:00:00        </div>
+  <div style={{width: 92, height: 28, left: 377, top: 393, position: 'absolute', color: 'white', fontSize: 28, fontFamily: 'Inter', fontWeight: '400', wordWrap: 'break-word'}}>Today</div>
+  <div style={{width: 136, height: 33, left: 719, top: 396, position: 'absolute', color: '#D9D9D9', fontSize: 28, fontFamily: 'Inter', fontWeight: '300', wordWrap: 'break-word'}}>01:53:25</div>
+  <div style={{width: 430, height: 71, left: 446, top: 631, position: 'absolute', color: 'white', fontSize: 30, fontFamily: 'Inter', fontWeight: '400', wordWrap: 'break-word'}}>Mathematics         00:00:00</div>
+  <div style={{width: 434, height: 82, left: 447, top: 718, position: 'absolute', color: 'white', fontSize: 30, fontFamily: 'Inter', fontWeight: '400', wordWrap: 'break-word'}}>Accounts               00:00:00</div>
+  <img style={{width: 45, height: 45, left: 358, top: 471, position: 'absolute', borderRadius: 348.50}} src="https://placehold.co/45x45" />
+  <img style={{width: 45, height: 45, left: 358, top: 548, position: 'absolute', borderRadius: 348.50}} src="https://placehold.co/45x45" />
+  <div style={{width: 205, height: 63, left: 1077, top: 393, position: 'absolute', color: 'white', fontSize: 32, fontFamily: 'Inter', fontWeight: '600', wordWrap: 'break-word'}}>Focus Time</div>
+  <div style={{width: 278, height: 1027, left: 2, top: -3, position: 'absolute', background: 'conic-gradient(from 179deg at 52.89% 51.69%, #55AEAE 25deg, #275050 132deg, #234848 234deg)'}} />
+  <div style={{width: 259, height: 73, left: 30, top: 63, position: 'absolute', color: 'white', fontSize: 62, fontFamily: 'Jaro', fontWeight: '400', wordWrap: 'break-word'}}>ProTimer<br/></div>
+  <div style={{width: 39, height: 39, left: 313, top: 84, position: 'absolute', background: '#D9D9D9', border: '1px #D9D9D9 solid'}} />
+  <div style={{width: 11.86, height: 20.04, left: 324.81, top: 93.48, position: 'absolute', background: '#D9D9D9', border: '1px #D9D9D9 solid'}} />
+  <img style={{width: 55, height: 58, left: 30, top: 260, position: 'absolute'}} src="https://placehold.co/55x58" />
+  <div style={{width: 158, height: 43, left: 102, top: 271, position: 'absolute', color: 'white', fontSize: 28, fontFamily: 'Inter', fontWeight: '500', wordWrap: 'break-word'}}>Analysis</div>
+  <div style={{left: 102, top: 196, position: 'absolute', color: 'white', fontSize: 32, fontFamily: 'Inter', fontWeight: '400', wordWrap: 'break-word'}}>Home</div>
+  <div style={{width: 41, height: 39.05, left: 34, top: 196, position: 'absolute', background: 'white'}} />
+</div>

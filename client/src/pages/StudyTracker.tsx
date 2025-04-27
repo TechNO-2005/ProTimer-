@@ -559,50 +559,61 @@ export default function StudyTracker() {
             </div>
             
             {isGroupsLoading ? (
-              <div className="py-8 text-center">Loading study groups...</div>
+              <div className="flex flex-col items-center justify-center py-16">
+                <Loader2 className="h-12 w-12 text-teal-500 mb-4 animate-spin" />
+                <p className="text-gray-300 text-lg">Loading your study groups...</p>
+              </div>
             ) : (
               <div className="space-y-8">
                 {(!studyGroups || studyGroups.length === 0) ? (
-                  <div className="text-center py-10">
-                    <p className="text-gray-400 text-xl mb-4">You haven't joined any study groups yet</p>
-                    <Button 
-                      onClick={() => setShowCreateDialog(true)} 
-                      variant="outline" 
-                      className="border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-black px-6 mr-4"
-                    >
-                      <PlusCircle className="mr-2 h-5 w-5" /> Create a Group
-                    </Button>
-                    <Button 
-                      onClick={() => setShowSearchDialog(true)} 
-                      variant="outline" 
-                      className="border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-black px-6"
-                    >
-                      <Search className="mr-2 h-5 w-5" /> Find Groups
-                    </Button>
+                  <div className="flex flex-col items-center justify-center p-10 mt-8 border border-dashed border-gray-700 rounded-2xl">
+                    <div className="text-center mb-8">
+                      <h3 className="text-2xl mb-3 font-medium">You haven't joined any study groups yet</h3>
+                      <p className="text-gray-400 max-w-md mx-auto">Create your own group or search for existing ones to collaborate with other students</p>
+                    </div>
+                    <div className="flex gap-4">
+                      <Button 
+                        onClick={() => setShowCreateDialog(true)} 
+                        className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-5 h-auto rounded-xl"
+                      >
+                        <PlusCircle className="mr-2 h-5 w-5" /> Create New Group
+                      </Button>
+                      <Button 
+                        onClick={() => setShowSearchDialog(true)} 
+                        variant="outline" 
+                        className="border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-black px-6 py-5 h-auto rounded-xl"
+                      >
+                        <Search className="mr-2 h-5 w-5" /> Find Groups
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   studyGroups.map((group) => (
-                    <div key={group.id} className="group-item">
-                      <Link href={`/study-group/${group.id}`} className="block px-8">
-                        <h3 className="text-4xl font-normal">{group.name}</h3>
-                        <p className="text-gray-400 text-xl mt-2">
-                          {group.description || `Created: ${new Date(group.createdAt).toLocaleDateString()}`}
+                    <div key={group.id} className="group-item bg-gray-900 bg-opacity-40 rounded-xl hover:bg-gray-800 transition-all duration-200">
+                      <Link href={`/study-group/${group.id}`} className="block px-8 py-4">
+                        <h3 className="text-3xl font-normal text-white">{group.name}</h3>
+                        <p className="text-gray-400 text-lg mt-2">
+                          {group.description || "No description provided"}
+                        </p>
+                        <p className="text-gray-500 text-sm mt-2">
+                          Created: {new Date(group.createdAt).toLocaleDateString()}
                         </p>
                       </Link>
-                      <div className="border-t border-gray-400 my-4 mx-8"></div>
                     </div>
                   ))
                 )}
                 
-                <div className="flex justify-center mt-8">
-                  <Button 
-                    onClick={() => setShowSearchDialog(true)} 
-                    variant="outline" 
-                    className="border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-black px-6"
-                  >
-                    <Search className="mr-2 h-5 w-5" /> Find More Groups
-                  </Button>
-                </div>
+                {studyGroups && studyGroups.length > 0 && (
+                  <div className="flex justify-center mt-12">
+                    <Button 
+                      onClick={() => setShowSearchDialog(true)} 
+                      variant="outline" 
+                      className="border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-black px-8 py-6 h-auto rounded-xl"
+                    >
+                      <Search className="mr-2 h-5 w-5" /> Find More Groups
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
             
@@ -610,88 +621,73 @@ export default function StudyTracker() {
             <div className="mt-12">
               <h2 className="text-2xl font-medium ml-4 mb-6">Group Study Session</h2>
               
-              <div className="grid grid-cols-2 gap-8 mt-6">
-                {/* Example Group Members with Study Times */}
-                <div className="flex flex-col items-center">
-                  <div className="bg-black rounded-[20px] shadow-[0_0_10px_10px_rgba(84.58,174,174,0.90)_inset] w-32 h-44">
-                    <div className="h-full flex flex-col items-center justify-between py-4">
-                      <span className="text-white font-bold text-xl">
-                        {selectedSession?.subject?.charAt(0) || "S"}
-                      </span>
-                      <span className="text-white font-bold text-lg">You</span>
-                      <span className="text-white font-bold">
-                        {formatTime(timer)}
-                      </span>
+              {studyGroups && studyGroups.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
+                    {/* Your Study Card */}
+                    <div className="flex flex-col items-center">
+                      <div className="bg-black rounded-[20px] shadow-[0_0_10px_10px_rgba(84.58,174,174,0.90)_inset] w-32 h-44">
+                        <div className="h-full flex flex-col items-center justify-between py-4">
+                          <span className="text-white font-bold text-xl">
+                            {selectedSession?.subject?.charAt(0) || user?.username?.charAt(0) || "?"}
+                          </span>
+                          <span className="text-white font-bold text-lg">You</span>
+                          <span className="text-white font-bold">
+                            {formatTime(timer)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-sm font-medium">Current Session</div>
                     </div>
                   </div>
-                  <div className="mt-2 text-sm font-medium">Current Session</div>
-                </div>
-
-                <div className="flex flex-col items-center">
-                  <div className="bg-black rounded-[20px] shadow-[0_0_10px_10px_rgba(225,234,233,0.45)_inset] w-32 h-44">
-                    <div className="h-full flex flex-col items-center justify-between py-4">
-                      <span className="text-white font-bold text-xl">K</span>
-                      <span className="text-white font-bold text-lg">Kane_22</span>
-                      <span className="text-white font-bold">00:45:30</span>
-                    </div>
+                  
+                  <div className="flex flex-col items-center justify-center mt-8 p-6 border border-dashed border-gray-600 rounded-xl">
+                    <p className="text-gray-400 text-center mb-4">
+                      Group members will appear here when they join the study session.
+                    </p>
+                    <p className="text-gray-500 text-sm text-center">
+                      Members of your study group who are actively studying will appear here with their study times.
+                      <br />Share your group name with friends to start studying together!
+                    </p>
                   </div>
-                  <div className="mt-2 text-sm font-medium">Total Today</div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-4 gap-4 mt-8">
-                <div className="flex flex-col items-center">
-                  <div className="bg-black rounded-[20px] shadow-[0_0_10px_10px_rgba(225,234,233,0.45)_inset] w-32 h-44">
-                    <div className="h-full flex flex-col items-center justify-between py-4">
-                      <span className="text-white font-bold text-xl">A</span>
-                      <span className="text-white font-bold text-sm">Agarwal_30</span>
-                      <span className="text-white font-bold">00:30:30</span>
-                    </div>
+                  
+                  <div className="flex justify-center mt-8">
+                    {isRunning ? (
+                      <Button onClick={handleStopSession} variant="outline" size="lg" className="border-red-500 text-red-500 hover:bg-red-500 hover:text-black">
+                        <Pause className="mr-2" /> Stop Session
+                      </Button>
+                    ) : (
+                      <Button onClick={() => setShowSubjectDialog(true)} variant="outline" size="lg" className="border-green-500 text-green-500 hover:bg-green-500 hover:text-black">
+                        <Play className="mr-2" /> Start Session
+                      </Button>
+                    )}
                   </div>
-                </div>
-                
-                <div className="flex flex-col items-center">
-                  <div className="bg-black rounded-[20px] shadow-[0_0_10px_10px_rgba(225,234,233,0.45)_inset] w-32 h-44">
-                    <div className="h-full flex flex-col items-center justify-between py-4">
-                      <span className="text-white font-bold text-xl">S</span>
-                      <span className="text-white font-bold text-sm">Seema_25</span>
-                      <span className="text-white font-bold">00:19:30</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex flex-col items-center">
-                  <div className="bg-black rounded-[20px] shadow-[0_0_10px_10px_rgba(225,234,233,0.45)_inset] w-32 h-44">
-                    <div className="h-full flex flex-col items-center justify-between py-4">
-                      <span className="text-white font-bold text-xl">R</span>
-                      <span className="text-white font-bold text-sm">Reema_25</span>
-                      <span className="text-white font-bold">00:14:30</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex flex-col items-center">
-                  <div className="bg-black rounded-[20px] shadow-[0_0_10px_10px_rgba(84.58,174,174,0.90)_inset] w-32 h-44">
-                    <div className="h-full flex flex-col items-center justify-between py-4">
-                      <span className="text-white font-bold text-xl">R</span>
-                      <span className="text-white font-bold text-sm">Reema_25</span>
-                      <span className="text-white font-bold">00:10:30</span>
-                    </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center mt-8 p-8 border border-dashed border-gray-600 rounded-xl">
+                  <p className="text-gray-300 text-center text-xl mb-4">
+                    You haven't joined any study groups yet
+                  </p>
+                  <p className="text-gray-500 text-center mb-6">
+                    Create your own study group or join existing ones to track study time together
+                  </p>
+                  <div className="flex gap-4">
+                    <Button
+                      onClick={() => setShowCreateDialog(true)}
+                      className="bg-teal-600 hover:bg-teal-700 text-white"
+                    >
+                      <PlusCircle className="mr-2 h-5 w-5" /> Create Group
+                    </Button>
+                    <Button
+                      onClick={() => setShowSearchDialog(true)}
+                      variant="outline"
+                      className="border-teal-500 text-teal-500 hover:bg-teal-500 hover:text-black"
+                    >
+                      <Search className="mr-2 h-5 w-5" /> Find Groups
+                    </Button>
                   </div>
                 </div>
-              </div>
-              
-              <div className="flex justify-center mt-8">
-                {isRunning ? (
-                  <Button onClick={handleStopSession} variant="outline" size="lg" className="border-red-500 text-red-500 hover:bg-red-500 hover:text-black">
-                    <Pause className="mr-2" /> Stop Session
-                  </Button>
-                ) : (
-                  <Button onClick={() => setShowSubjectDialog(true)} variant="outline" size="lg" className="border-green-500 text-green-500 hover:bg-green-500 hover:text-black">
-                    <Play className="mr-2" /> Start Session
-                  </Button>
-                )}
-              </div>
+              )}
             </div>
           </div>
         )}

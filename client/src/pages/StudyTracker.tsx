@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import { Pause, Play, Plus, X, Settings, Clock, Users, Search, UserPlus, PlusCircle, Loader2 } from "lucide-react";
 import { GroupDetail } from "@/components/group/GroupDetail";
-import { StudySidebar } from "@/components/layout/StudySidebar";
+import Sidebar from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -451,11 +451,14 @@ export default function StudyTracker() {
     return total + (session.duration || 0);
   }, 0);
 
+  // Sidebar visibility state (to match other pages)
+  const [sidebarVisible, setSidebarVisible] = useState(true);
+  
   return (
-    <div className="flex w-full min-h-screen bg-black text-white">
-      <StudySidebar onStartSession={() => setShowSubjectDialog(true)} />
+    <div className="flex min-h-screen relative bg-black text-white">
+      <Sidebar visible={sidebarVisible} onToggle={() => setSidebarVisible(!sidebarVisible)} />
       
-      <div className="flex-1 px-8 py-8 overflow-y-auto max-h-screen">
+      <div className={`flex-1 transition-all duration-300 ${sidebarVisible ? 'md:ml-[280px]' : ''} px-4 py-6 md:px-8 md:py-8 overflow-y-auto`}>
         <div className="w-full text-center mb-8">
           <h1 className="text-4xl font-bold mb-2">Study Tracker</h1>
         </div>

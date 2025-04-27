@@ -1,25 +1,14 @@
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getAnalytics } from "firebase/analytics";
+// This is a placeholder file since we're no longer using Firebase authentication
+// It prevents import errors in files that might still reference Firebase
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyBaxfX3sXlOsDAPPzvGUcsfeLrYDpJeYKY",
-  authDomain: "protimer-aceed.firebaseapp.com",
-  projectId: "protimer-aceed",
-  storageBucket: "protimer-aceed.appspot.com",
-  messagingSenderId: "578871094044",
-  appId: "1:578871094044:web:0df5ea35d23910300868d9",
-  measurementId: "G-YKMSL8R5LD"
+// Mock auth object with empty properties to prevent errors
+export const auth = {
+  currentUser: null
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Mock analytics
+export const analytics = null;
 
-// Initialize Firebase Authentication and get a reference to the service
-export const auth = getAuth(app);
-
-// Initialize Analytics - only in browser environments
-export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
-
+// Mock app
+const app = {};
 export default app;

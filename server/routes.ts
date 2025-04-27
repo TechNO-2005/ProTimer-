@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
-import { insertTaskSchema, insertHabitSchema, insertFlashcardDeckSchema, insertFlashcardSchema, insertMeetingSchema } from "@shared/schema";
+import { insertTaskSchema, insertHabitSchema, insertFlashcardDeckSchema, insertFlashcardSchema, insertMeetingSchema, insertStudySessionSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
@@ -368,6 +368,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.sendStatus(204);
     } else {
       res.status(500).json({ message: "Failed to delete meeting" });
+    }
+  });
+
+  // Study Sessions API
+  app.get("/api/study-sessions", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const userId = req.user!.id;
+    
+    const sessions = await storage.getStudySessions(userId);
+    res.json(sessions);
+  });
+  
+  app.get("/api/study-sessions/active", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const userId = req.user!.id;
+    
+    const session = await storage.getActiveStudySession(userId);
+    if (!session) {
+      return res.status(404).json({ message: "No active study session found" });
+    }
+    
+    res.json(session);
+  });
+  
+  app.get("/api/study-sessions/stats", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const userId = req.user!.id;
+    
+    const stats = await storage.getTotalStudyTimeBySubject(userId);
+    res.json(stats);
+  });
+  
+  app.get("/api/study-sessions/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { id } = req.params;
+    
+    const session = await storage.getStudySessionById(Number(id));
+    if (!session) return res.status(404).json({ message: "Study session not found" });
+    
+    if (session.userId !== req.user!.id) {
+      return res.status(403).json({ message: "Not authorized to access this study session" });
+    }
+    
+    res.json(session);
+  });
+  
+  app.post("/api/study-sessions", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      // Add userId and startTime to the request body
+      const sessionData = insertStudySessionSchema.parse({ 
+        ...req.body, 
+        userId: req.user!.id,
+        startTime: new Date() 
+      });
+      
+      const session = await storage.createStudySession(sessionData);
+      res.status(201).json(session);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid study session data", error });
+    }
+  });
+  
+  app.put("/api/study-sessions/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { id } = req.params;
+    
+    const session = await storage.getStudySessionById(Number(id));
+    if (!session) return res.status(404).json({ message: "Study session not found" });
+    
+    if (session.userId !== req.user!.id) {
+      return res.status(403).json({ message: "Not authorized to update this study session" });
+    }
+    
+    const updatedSession = await storage.updateStudySession(Number(id), req.body);
+    res.json(updatedSession);
+  });
+  
+  app.post("/api/study-sessions/:id/stop", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { id } = req.params;
+    
+    const session = await storage.getStudySessionById(Number(id));
+    if (!session) return res.status(404).json({ message: "Study session not found" });
+    
+    if (session.userId !== req.user!.id) {
+      return res.status(403).json({ message: "Not authorized to update this study session" });
+    }
+    
+    // Calculate study duration in seconds
+    const endTime = new Date();
+    const startTime = new Date(session.startTime);
+    const durationSeconds = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+    
+    const updatedSession = await storage.updateStudySession(Number(id), {
+      endTime,
+      duration: durationSeconds,
+      isActive: false
+    });
+    
+    res.json(updatedSession);
+  });
+  
+  app.delete("/api/study-sessions/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { id } = req.params;
+    
+    const session = await storage.getStudySessionById(Number(id));
+    if (!session) return res.status(404).json({ message: "Study session not found" });
+    
+    if (session.userId !== req.user!.id) {
+      return res.status(403).json({ message: "Not authorized to delete this study session" });
+    }
+    
+    const success = await storage.deleteStudySession(Number(id));
+    if (success) {
+      res.sendStatus(204);
+    } else {
+      res.status(500).json({ message: "Failed to delete study session" });
     }
   });
 

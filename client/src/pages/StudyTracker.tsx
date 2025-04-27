@@ -110,6 +110,7 @@ export default function StudyTracker() {
   const [timer, setTimer] = useState<number>(0);
   const [isRunning, setIsRunning] = useState(false);
   const [mode, setMode] = useState<"pomodoro" | "groups">("pomodoro");
+  const [sidebarVisible, setSidebarVisible] = useState(true);
 
   // Get all study sessions
   const { data: sessions, isLoading } = useQuery<StudySession[]>({
@@ -450,9 +451,6 @@ export default function StudyTracker() {
   const totalStudyTimeToday = todaysSessions.reduce((total, session) => {
     return total + (session.duration || 0);
   }, 0);
-
-  // Sidebar visibility state (to match other pages)
-  const [sidebarVisible, setSidebarVisible] = useState(true);
   
   return (
     <div className="flex min-h-screen relative bg-black text-white">
